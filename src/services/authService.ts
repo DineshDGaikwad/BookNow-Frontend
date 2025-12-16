@@ -38,5 +38,11 @@ export const authService = {
 
   logout: async (userId: string, refreshToken: string): Promise<void> => {
     await api.post('/auth/logout', { userId, refreshToken });
+  },
+
+  // Google Authentication (Customer only)
+  googleAuth: async (idToken: string): Promise<AuthResponse> => {
+    const response = await api.post('/auth/customer/google', { idToken });
+    return response.data;
   }
 };

@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { customerRegister, organizerRegister } from '../../store/authSlice';
 import { RootState, AppDispatch } from '../../store';
+import GoogleSignInButton from './GoogleSignInButton';
 
 interface RegisterFormProps {
   userType: 'customer' | 'organizer';
@@ -214,6 +215,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ userType }) => {
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
+
+            {userType === 'customer' && <GoogleSignInButton />}
 
             <p className="text-center text-gray-600">
               Already have an account?{' '}

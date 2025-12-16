@@ -5,7 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { store } from './store';
-import { setUser } from './store/authSlice';
+import { setUser, setToken } from './store/authSlice';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 // Auth Pages
@@ -20,6 +20,9 @@ import OrganizerRegister from './pages/auth/OrganizerRegister';
 // Customer Pages
 import HomePage from './pages/customer/HomePage';
 
+// Admin Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
+
 const AppContent: React.FC = () => {
   const dispatch = useDispatch();
 
@@ -32,8 +35,10 @@ const AppContent: React.FC = () => {
       try {
         const user = JSON.parse(userData);
         dispatch(setUser(user));
+        dispatch(setToken(token));
       } catch (error) {
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('userData');
       }
     }
@@ -94,7 +99,7 @@ const AppContent: React.FC = () => {
             path="/admin" 
             element={
               <ProtectedRoute role="Admin">
-                <div>Admin Dashboard - Coming Soon</div>
+                <AdminDashboard />
               </ProtectedRoute>
             } 
           />
