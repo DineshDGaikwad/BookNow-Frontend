@@ -71,6 +71,7 @@ const authSlice = createSlice({
       state.isAuthenticated = false;
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');
+      localStorage.removeItem('userData');
     },
     clearError: (state) => {
       state.error = null;
@@ -98,6 +99,7 @@ const authSlice = createSlice({
         };
         state.token = action.payload.accessToken;
         state.isAuthenticated = true;
+        localStorage.setItem('userData', JSON.stringify(state.user));
       })
       .addCase(customerLogin.rejected, (state, action) => {
         state.isLoading = false;
@@ -115,6 +117,7 @@ const authSlice = createSlice({
         };
         state.token = action.payload.accessToken;
         state.isAuthenticated = true;
+        localStorage.setItem('userData', JSON.stringify(state.user));
       })
       // Admin Login
       .addCase(adminLogin.fulfilled, (state, action) => {
@@ -128,6 +131,7 @@ const authSlice = createSlice({
         };
         state.token = action.payload.accessToken;
         state.isAuthenticated = true;
+        localStorage.setItem('userData', JSON.stringify(state.user));
       })
       // Register cases
       .addCase(customerRegister.fulfilled, (state, action) => {

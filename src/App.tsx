@@ -19,6 +19,19 @@ import OrganizerRegister from './pages/auth/OrganizerRegister';
 
 // Customer Pages
 import HomePage from './pages/customer/HomePage';
+import CustomerEventsPage from './pages/customer/CustomerEventsPage';
+import EventDetailsPage from './pages/customer/EventDetailsPage';
+
+// Organizer Pages
+import OrganizerDashboard from './pages/organizer/OrganizerDashboard';
+import OrganizerEventsPage from './pages/organizer/OrganizerEventsPage';
+import CreateEventPage from './pages/organizer/CreateEventPage';
+import VenuesPage from './pages/organizer/VenuesPage';
+import CreateVenuePage from './pages/organizer/CreateVenuePage';
+import EventShowsPage from './pages/organizer/EventShowsPage';
+
+// Admin Pages
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 const AppContent: React.FC = () => {
   const dispatch = useDispatch();
@@ -54,14 +67,8 @@ const AppContent: React.FC = () => {
           
           {/* Customer Routes */}
           <Route path="/" element={<HomePage />} />
-          <Route 
-            path="/events" 
-            element={
-              <ProtectedRoute role="Customer">
-                <div>Events Page - Coming Soon</div>
-              </ProtectedRoute>
-            } 
-          />
+          <Route path="/events" element={<CustomerEventsPage />} />
+          <Route path="/events/:eventId" element={<EventDetailsPage />} />
           <Route 
             path="/my-bookings" 
             element={
@@ -76,7 +83,7 @@ const AppContent: React.FC = () => {
             path="/organizer" 
             element={
               <ProtectedRoute role="Organizer">
-                <div>Organizer Dashboard - Coming Soon</div>
+                <OrganizerDashboard />
               </ProtectedRoute>
             } 
           />
@@ -84,7 +91,55 @@ const AppContent: React.FC = () => {
             path="/organizer/events" 
             element={
               <ProtectedRoute role="Organizer">
-                <div>Manage Events - Coming Soon</div>
+                <OrganizerEventsPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/organizer/events/create" 
+            element={
+              <ProtectedRoute role="Organizer">
+                <CreateEventPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/organizer/venues" 
+            element={
+              <ProtectedRoute role="Organizer">
+                <VenuesPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/organizer/venues/create" 
+            element={
+              <ProtectedRoute role="Organizer">
+                <CreateVenuePage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/organizer/events/:eventId" 
+            element={
+              <ProtectedRoute role="Organizer">
+                <div>Event Details - Coming Soon</div>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/organizer/events/:eventId/edit" 
+            element={
+              <ProtectedRoute role="Organizer">
+                <div>Edit Event - Coming Soon</div>
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/organizer/events/:eventId/shows" 
+            element={
+              <ProtectedRoute role="Organizer">
+                <EventShowsPage />
               </ProtectedRoute>
             } 
           />
@@ -94,7 +149,7 @@ const AppContent: React.FC = () => {
             path="/admin" 
             element={
               <ProtectedRoute role="Admin">
-                <div>Admin Dashboard - Coming Soon</div>
+                <AdminDashboard />
               </ProtectedRoute>
             } 
           />
