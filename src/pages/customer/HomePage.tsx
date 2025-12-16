@@ -1,40 +1,17 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useSelector } from 'react-redux';
+import { Link } from 'react-router-dom';
 import { RootState } from '../../store';
 import Header from '../../components/common/Header';
 import HeroSection from '../../components/customer/HeroSection';
-import { testBackendConnection } from '../../utils/testBackend';
 
 const HomePage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
-  const [backendStatus, setBackendStatus] = useState<'checking' | 'connected' | 'disconnected'>('checking');
-
-  useEffect(() => {
-    testBackendConnection().then(isConnected => {
-      setBackendStatus(isConnected ? 'connected' : 'disconnected');
-    });
-  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      {/* Backend Status Indicator */}
-      <div className="bg-white border-b border-gray-200 px-4 py-2">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${
-              backendStatus === 'connected' ? 'bg-green-500' : 
-              backendStatus === 'disconnected' ? 'bg-red-500' : 'bg-yellow-500'
-            }`}></div>
-            <span className="text-sm text-gray-600">
-              Backend: {backendStatus === 'connected' ? 'Connected' : 
-                      backendStatus === 'disconnected' ? 'Disconnected' : 'Checking...'}
-            </span>
-          </div>
-          <span className="text-xs text-gray-400">Port: 5089</span>
-        </div>
-      </div>
       
       {user ? (
         // Authenticated user dashboard
@@ -52,9 +29,9 @@ const HomePage: React.FC = () => {
               <div className="text-2xl mb-3">🎭</div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">Browse Events</h3>
               <p className="text-gray-600 mb-4">Discover exciting events happening near you</p>
-              <button className="text-blue-500 hover:text-blue-600 font-medium">
+              <Link to="/events" className="text-blue-500 hover:text-blue-600 font-medium">
                 Explore Now →
-              </button>
+              </Link>
             </div>
 
             <div className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow">
