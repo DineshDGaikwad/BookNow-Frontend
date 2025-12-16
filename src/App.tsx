@@ -33,9 +33,6 @@ import EventShowsPage from './pages/organizer/EventShowsPage';
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 
-// Admin Pages
-import AdminDashboard from './pages/admin/AdminDashboard';
-
 const AppContent: React.FC = () => {
   const dispatch = useDispatch();
 
