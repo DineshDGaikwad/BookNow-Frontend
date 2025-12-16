@@ -17,6 +17,13 @@ export const customerLogin = createAsyncThunk(
     const response = await authService.customerLogin(credentials);
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
+    localStorage.setItem('userData', JSON.stringify({
+      userId: response.userId,
+      email: response.email,
+      name: response.name,
+      role: 'Customer',
+      profileCompleted: response.profileCompleted
+    }));
     return response;
   }
 );
@@ -27,6 +34,13 @@ export const organizerLogin = createAsyncThunk(
     const response = await authService.organizerLogin(credentials);
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
+    localStorage.setItem('userData', JSON.stringify({
+      userId: response.userId,
+      email: response.email,
+      name: response.name,
+      role: 'Organizer',
+      profileCompleted: response.profileCompleted
+    }));
     return response;
   }
 );
@@ -37,6 +51,13 @@ export const adminLogin = createAsyncThunk(
     const response = await authService.adminLogin(credentials);
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
+    localStorage.setItem('userData', JSON.stringify({
+      userId: response.userId,
+      email: response.email,
+      name: response.name,
+      role: 'Admin',
+      profileCompleted: response.profileCompleted
+    }));
     return response;
   }
 );
@@ -47,6 +68,13 @@ export const customerRegister = createAsyncThunk(
     const response = await authService.customerRegister(data);
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
+    localStorage.setItem('userData', JSON.stringify({
+      userId: response.userId,
+      email: response.email,
+      name: response.name,
+      role: 'Customer',
+      profileCompleted: response.profileCompleted
+    }));
     return response;
   }
 );
@@ -57,6 +85,30 @@ export const organizerRegister = createAsyncThunk(
     const response = await authService.organizerRegister(data);
     localStorage.setItem('accessToken', response.accessToken);
     localStorage.setItem('refreshToken', response.refreshToken);
+    localStorage.setItem('userData', JSON.stringify({
+      userId: response.userId,
+      email: response.email,
+      name: response.name,
+      role: 'Organizer',
+      profileCompleted: response.profileCompleted
+    }));
+    return response;
+  }
+);
+
+export const googleAuth = createAsyncThunk(
+  'auth/googleAuth',
+  async (idToken: string) => {
+    const response = await authService.googleAuth(idToken);
+    localStorage.setItem('accessToken', response.accessToken);
+    localStorage.setItem('refreshToken', response.refreshToken);
+    localStorage.setItem('userData', JSON.stringify({
+      userId: response.userId,
+      email: response.email,
+      name: response.name,
+      role: 'Customer',
+      profileCompleted: response.profileCompleted
+    }));
     return response;
   }
 );
@@ -79,6 +131,9 @@ const authSlice = createSlice({
     setUser: (state, action: PayloadAction<User>) => {
       state.user = action.payload;
       state.isAuthenticated = true;
+    },
+    setToken: (state, action: PayloadAction<string>) => {
+      state.token = action.payload;
     }
   },
   extraReducers: (builder) => {
@@ -157,9 +212,30 @@ const authSlice = createSlice({
         };
         state.token = action.payload.accessToken;
         state.isAuthenticated = true;
+      })
+      // Google Auth
+      .addCase(googleAuth.pending, (state) => {
+        state.isLoading = true;
+        state.error = null;
+      })
+      .addCase(googleAuth.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.user = {
+          userId: action.payload.userId,
+          email: action.payload.email,
+          name: action.payload.name,
+          role: 'Customer',
+          profileCompleted: action.payload.profileCompleted
+        };
+        state.token = action.payload.accessToken;
+        state.isAuthenticated = true;
+      })
+      .addCase(googleAuth.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.error.message || 'Google authentication failed';
       });
   },
 });
 
-export const { logout, clearError, setUser } = authSlice.actions;
+export const { logout, clearError, setUser, setToken } = authSlice.actions;
 export default authSlice.reducer;

@@ -5,7 +5,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { store } from './store';
-import { setUser } from './store/authSlice';
+import { setUser, setToken } from './store/authSlice';
 import ProtectedRoute from './components/common/ProtectedRoute';
 
 // Auth Pages
@@ -45,8 +45,10 @@ const AppContent: React.FC = () => {
       try {
         const user = JSON.parse(userData);
         dispatch(setUser(user));
+        dispatch(setToken(token));
       } catch (error) {
         localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
         localStorage.removeItem('userData');
       }
     }

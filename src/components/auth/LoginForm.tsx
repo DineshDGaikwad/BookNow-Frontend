@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { customerLogin, organizerLogin, adminLogin } from '../../store/authSlice';
 import { RootState, AppDispatch } from '../../store';
+import GoogleSignInButton from './GoogleSignInButton';
 
 interface LoginFormProps {
   userType: 'customer' | 'organizer' | 'admin';
@@ -135,6 +136,8 @@ const LoginForm: React.FC<LoginFormProps> = ({ userType }) => {
             >
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
+
+            {userType === 'customer' && <GoogleSignInButton />}
 
             {getRegisterLink()}
 
