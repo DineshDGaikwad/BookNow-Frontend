@@ -38,7 +38,7 @@ const BookingConfirmation: React.FC = () => {
       alert('Booking link copied to clipboard!');
     }
   };
-
+/// ds
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
