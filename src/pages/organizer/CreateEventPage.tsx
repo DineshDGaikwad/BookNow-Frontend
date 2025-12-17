@@ -1,20 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { RootState } from '../../store';
 import Header from '../../components/common/Header';
-import { organizerAPI, CreateEventRequest } from '../../services/organizerAPI';
+import { organizerAPI, CreateEventRequest, VenueResponse } from '../../services/organizerAPI';
 import { toast } from 'react-toastify';
 
 const CreateEventPage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [venues, setVenues] = useState<VenueResponse[]>([]);
   const [formData, setFormData] = useState<CreateEventRequest>({
     eventTitle: '',
     eventDescription: '',
     eventCategory: '',
     eventGenre: '',
+    venueId: '',
     posterUrl: ''
   });
 
@@ -22,6 +24,20 @@ const CreateEventPage: React.FC = () => {
     'Music', 'Theatre', 'Comedy', 'Sports', 'Conference', 
     'Workshop', 'Festival', 'Exhibition', 'Dance', 'Other'
   ];
+
+  useEffect(() => {
+    const loadVenues = async () => {
+      if (user?.userId) {
+        try {
+          const venueData = await organizerAPI.getVenues(user.userId);
+          setVenues(venueData);
+        } catch (error) {
+          console.error('Failed to load venues:', error);
+        }
+      }
+    };
+    loadVenues();
+  }, [user?.userId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -89,6 +105,33 @@ const CreateEventPage: React.FC = () => {
                 className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Describe your event..."
               />
+            </div>
+
+            {/* Venue Selection */}
+            <div>
+              <label htmlFor="venueId" className="block text-sm font-medium text-gray-700 mb-2">
+                Venue *
+              </label>
+              <select
+                id="venueId"
+                name="venueId"
+                required
+                value={formData.venueId}
+                onChange={handleChange}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="">Select a venue</option>
+                {venues.map((venue) => (
+                  <option key={venue.venueId} value={venue.venueId}>
+                    {venue.venueName} - {venue.venueCity} (Capacity: {venue.venueCapacity})
+                  </option>
+                ))}
+              </select>
+              {venues.length === 0 && (
+                <p className="text-sm text-gray-500 mt-1">
+                  No venues available. Create a venue first or contact admin for venue approval.
+                </p>
+              )}
             </div>
 
             {/* Category and Genre */}

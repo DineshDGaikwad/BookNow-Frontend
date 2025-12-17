@@ -7,6 +7,7 @@ import PendingApprovals from '../../components/admin/PendingApprovals';
 import RecentActions from '../../components/admin/RecentActions';
 import ApprovalsContent from '../../components/admin/ApprovalsContent';
 import UserManagement from '../../components/admin/UserManagement';
+import VenueManagement from '../../components/admin/VenueManagement';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -49,10 +50,7 @@ const AdminDashboard: React.FC = () => {
           )}
           
           {activeTab === 'venues' && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Venue Management</h2>
-              <p className="text-gray-600">Venue management functionality coming soon...</p>
-            </div>
+            <VenueManagement />
           )}
           
           {activeTab === 'audit' && (

@@ -12,12 +12,15 @@ const EventDetailsPage: React.FC = () => {
   useEffect(() => {
     if (eventId) {
       loadEventDetails();
+      // Refresh data every 30 seconds for real-time updates
+      const interval = setInterval(loadEventDetails, 30000);
+      return () => clearInterval(interval);
     }
   }, [eventId]);
 
   const loadEventDetails = async () => {
     try {
-      const data = await customerAPI.getEventDetails(eventId!);
+      const data = await customerAPI.getEventDetails(eventId!, true);
       setEvent(data);
     } catch (error) {
       console.error('Failed to load event details:', error);
@@ -27,8 +30,9 @@ const EventDetailsPage: React.FC = () => {
   };
 
   const getUpcomingShows = () => {
-    if (!event) return [];
-    return event.upcomingShows
+    if (!event || !event.shows) return [];
+    
+    return event.shows
       .filter(show => new Date(show.showStartTime) > new Date())
       .sort((a, b) => new Date(a.showStartTime).getTime() - new Date(b.showStartTime).getTime());
   };
@@ -131,11 +135,11 @@ const EventDetailsPage: React.FC = () => {
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                 <div className="flex items-center">
                   <span className="mr-2">👤</span>
-                  <span className="text-gray-600">By {event.organizerName}</span>
+                  <span className="text-gray-600">Venue: {event.venueName}</span>
                 </div>
                 <div className="flex items-center">
                   <span className="mr-2">🎭</span>
-                  <span className="text-gray-600">{event.showCount} Shows</span>
+                  <span className="text-gray-600">{getUpcomingShows().length} Shows</span>
                 </div>
                 <div className="flex items-center">
                   <span className="mr-2">📅</span>
@@ -152,7 +156,7 @@ const EventDetailsPage: React.FC = () => {
         </div>
 
         {/* Shows Section */}
-        {upcomingShows.length > 0 ? (
+        {(upcomingShows.length > 0 || (event.shows && event.shows.length > 0)) ? (
           <div className="bg-white rounded-2xl shadow-lg p-8">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Book Tickets</h2>
             
@@ -184,7 +188,7 @@ const EventDetailsPage: React.FC = () => {
 
             {/* Shows for Selected Date */}
             <div className="space-y-4">
-              {showsForSelectedDate.map(show => (
+              {(showsForSelectedDate.length > 0 ? showsForSelectedDate : event.shows || []).map(show => (
                 <div key={show.showId} className="border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-shadow">
                   <div className="flex flex-col md:flex-row md:items-center justify-between">
                     <div className="flex-1 mb-4 md:mb-0">
@@ -200,7 +204,7 @@ const EventDetailsPage: React.FC = () => {
                         </div>
                         <div className="flex items-center text-gray-600">
                           <span className="mr-2">📍</span>
-                          <span>{show.venueName}, {show.venueCity}</span>
+                          <span>{event.venueName}, {event.venueCity}</span>
                         </div>
                       </div>
                       
@@ -211,7 +215,10 @@ const EventDetailsPage: React.FC = () => {
                         {show.showFormat && (
                           <span>🎬 {show.showFormat}</span>
                         )}
-                        <span>🎫 {show.availableSeats} seats available</span>
+                        <span className={show.availableSeats < 50 ? 'text-red-600 font-semibold' : 'text-gray-500'}>
+                          🎫 {show.availableSeats} seats available
+                          {show.availableSeats < 50 && show.availableSeats > 0 && ' - Filling Fast!'}
+                        </span>
                       </div>
                     </div>
                     
@@ -223,12 +230,28 @@ const EventDetailsPage: React.FC = () => {
                         <div className="text-sm text-gray-500">per ticket</div>
                       </div>
                       
-                      <Link
-                        to={`/shows/${show.showId}/book`}
-                        className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg"
-                      >
-                        Book Now
-                      </Link>
+                      {show.totalSeats === 0 ? (
+                        <button
+                          disabled
+                          className="bg-gray-400 text-white px-6 py-3 rounded-lg font-medium cursor-not-allowed"
+                        >
+                          Seats Not Available
+                        </button>
+                      ) : show.availableSeats > 0 ? (
+                        <Link
+                          to={`/shows/${show.showId}/seats`}
+                          className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-105 shadow-lg"
+                        >
+                          Select Seats
+                        </Link>
+                      ) : (
+                        <button
+                          disabled
+                          className="bg-gray-400 text-white px-6 py-3 rounded-lg font-medium cursor-not-allowed"
+                        >
+                          Sold Out
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>

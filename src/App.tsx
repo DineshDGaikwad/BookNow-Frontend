@@ -21,6 +21,10 @@ import OrganizerRegister from './pages/auth/OrganizerRegister';
 import HomePage from './pages/customer/HomePage';
 import CustomerEventsPage from './pages/customer/CustomerEventsPage';
 import EventDetailsPage from './pages/customer/EventDetailsPage';
+import SeatSelection from './pages/customer/SeatSelection';
+import Checkout from './pages/customer/Checkout';
+import BookingConfirmation from './pages/customer/BookingConfirmation';
+import ProfilePage from './pages/ProfilePage';
 
 // Organizer Pages
 import OrganizerDashboard from './pages/organizer/OrganizerDashboard';
@@ -28,7 +32,8 @@ import OrganizerEventsPage from './pages/organizer/OrganizerEventsPage';
 import CreateEventPage from './pages/organizer/CreateEventPage';
 import VenuesPage from './pages/organizer/VenuesPage';
 import CreateVenuePage from './pages/organizer/CreateVenuePage';
-import EventShowsPage from './pages/organizer/EventShowsPage';
+import FastShowManagement from './pages/organizer/FastShowManagement';
+import TestAPI from './pages/organizer/TestAPI';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -55,7 +60,7 @@ const AppContent: React.FC = () => {
   }, [dispatch]);
 
   return (
-    <Router>
+    <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <div className="App">
         <Routes>
           {/* Public Routes */}
@@ -71,6 +76,10 @@ const AppContent: React.FC = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/events" element={<CustomerEventsPage />} />
           <Route path="/events/:eventId" element={<EventDetailsPage />} />
+          <Route path="/shows/:showId/seats" element={<SeatSelection />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/booking/:bookingId" element={<BookingConfirmation />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route 
             path="/my-bookings" 
             element={
@@ -141,9 +150,13 @@ const AppContent: React.FC = () => {
             path="/organizer/events/:eventId/shows" 
             element={
               <ProtectedRoute role="Organizer">
-                <EventShowsPage />
+                <FastShowManagement />
               </ProtectedRoute>
             } 
+          />
+          <Route 
+            path="/test-api" 
+            element={<TestAPI />} 
           />
           
           {/* Admin Routes */}
