@@ -8,14 +8,13 @@ import { venueAPI, VenueResponse } from '../../services/venueAPI';
 import { organizerAPI, EventResponse } from '../../services/organizerAPI';
 import { toast } from 'react-toastify';
 
-const EventShowsPage: React.FC = () => {
+const ShowManagementPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
   const { user } = useSelector((state: RootState) => state.auth);
   const [event, setEvent] = useState<EventResponse | null>(null);
   const [shows, setShows] = useState<ShowResponse[]>([]);
   const [venues, setVenues] = useState<VenueResponse[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [editingShow, setEditingShow] = useState<ShowResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState<CreateShowRequest>({
     eventId: eventId || '',
@@ -29,24 +28,32 @@ const EventShowsPage: React.FC = () => {
   });
 
   useEffect(() => {
-    if (eventId) {
+    if (eventId && user?.userId) {
       loadData();
+    } else {
+      setLoading(false);
     }
-  }, [eventId, user]);
+  }, [eventId, user?.userId]);
 
   const loadData = async () => {
     try {
-      const userId = user?.userId || 'test-organizer-id';
+      const userId = user?.userId || '';
       
-      const eventData = await organizerAPI.getEvent(eventId!, userId);
-      const showsData = await showAPI.getEventShows(eventId!, userId);
-      const venuesData = await venueAPI.getVenues(userId);
+      const [eventData, showsData, venuesData] = await Promise.all([
+        organizerAPI.getEvent(eventId!, userId),
+        showAPI.getEventShows(eventId!, userId),
+        venueAPI.getVenues(userId)
+      ]);
       
       setEvent(eventData);
-      setShows(showsData);
-      setVenues(venuesData.filter(v => v.venueStatus === 1));
+      setShows(showsData || []);
+      setVenues((venuesData || []).filter(v => v.venueStatus === 1));
+      
     } catch (error) {
-      toast.error('Failed to load event data');
+      console.error('Failed to load data:', error);
+      toast.error('Failed to load show data');
+      setShows([]);
+      setVenues([]);
     } finally {
       setLoading(false);
     }
@@ -55,49 +62,19 @@ const EventShowsPage: React.FC = () => {
   const handleCreateShow = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate venue pricing
-    const selectedVenue = venues.find(v => v.venueId === formData.venueId);
-    if (selectedVenue && selectedVenue.defaultPriceMin && selectedVenue.defaultPriceMax) {
-      if ((formData.showPriceMin || 0) < selectedVenue.defaultPriceMin) {
-        toast.error(`Minimum price cannot be less than venue minimum: ₹${selectedVenue.defaultPriceMin}`);
-        return;
-      }
-      if ((formData.showPriceMax || 0) > selectedVenue.defaultPriceMax) {
-        toast.error(`Maximum price cannot exceed venue maximum: ₹${selectedVenue.defaultPriceMax}`);
-        return;
-      }
-    }
-    
     try {
-      const userId = user?.userId || 'test-organizer-id';
-      if (editingShow) {
-        await showAPI.updateShow(editingShow.showId, userId, {
-          showStartTime: formData.showStartTime,
-          showEndTime: formData.showEndTime,
-          showLanguage: formData.showLanguage,
-          showFormat: formData.showFormat
-        });
-        if (formData.showPriceMin !== editingShow.showPriceMin || formData.showPriceMax !== editingShow.showPriceMax) {
-          await showAPI.updatePricing(editingShow.showId, userId, {
-            showPriceMin: formData.showPriceMin,
-            showPriceMax: formData.showPriceMax
-          });
-        }
-        toast.success('Show updated successfully!');
-      } else {
-        await showAPI.createShow(userId, formData);
-        toast.success('Show created successfully!');
-      }
+      const userId = user?.userId || '';
+      await showAPI.createShow(userId, formData);
+      toast.success('Show created successfully!');
       resetForm();
       loadData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || `Failed to ${editingShow ? 'update' : 'create'} show`);
+      toast.error(error.response?.data?.message || 'Failed to create show');
     }
   };
 
   const resetForm = () => {
     setShowCreateForm(false);
-    setEditingShow(null);
     setFormData({
       eventId: eventId || '',
       venueId: '',
@@ -110,25 +87,10 @@ const EventShowsPage: React.FC = () => {
     });
   };
 
-  const handleEditShow = (show: ShowResponse) => {
-    setEditingShow(show);
-    setFormData({
-      eventId: show.eventId,
-      venueId: show.venueId,
-      showStartTime: new Date(show.showStartTime).toISOString().slice(0, 16),
-      showEndTime: new Date(show.showEndTime).toISOString().slice(0, 16),
-      showLanguage: show.showLanguage || '',
-      showFormat: show.showFormat || '',
-      showPriceMin: show.showPriceMin || 0,
-      showPriceMax: show.showPriceMax || 0
-    });
-    setShowCreateForm(true);
-  };
-
   const handleDeleteShow = async (showId: string) => {
     if (window.confirm('Are you sure you want to delete this show?')) {
       try {
-        const userId = user?.userId || 'test-organizer-id';
+        const userId = user?.userId || '';
         await showAPI.deleteShow(showId, userId);
         toast.success('Show deleted successfully');
         loadData();
@@ -136,36 +98,6 @@ const EventShowsPage: React.FC = () => {
         toast.error('Failed to delete show');
       }
     }
-  };
-
-  const getStatusText = (status: number) => {
-    switch (status) {
-      case 0: return 'Scheduled';
-      case 1: return 'Live';
-      case 2: return 'Completed';
-      case 3: return 'Cancelled';
-      default: return 'Unknown';
-    }
-  };
-
-  const getStatusColor = (status: number) => {
-    switch (status) {
-      case 0: return 'bg-blue-100 text-blue-800';
-      case 1: return 'bg-green-100 text-green-800';
-      case 2: return 'bg-gray-100 text-gray-800';
-      case 3: return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const handleVenueChange = (venueId: string) => {
-    const selectedVenue = venues.find(v => v.venueId === venueId);
-    setFormData({
-      ...formData,
-      venueId,
-      showPriceMin: selectedVenue?.defaultPriceMin || 0,
-      showPriceMax: selectedVenue?.defaultPriceMax || 0
-    });
   };
 
   if (loading) {
@@ -194,7 +126,9 @@ const EventShowsPage: React.FC = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <Link to="/organizer/events" className="text-blue-500 hover:underline mb-2 block">← Back to Events</Link>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Shows for "{event?.eventTitle}"</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+              Shows for "{event?.eventTitle || 'Loading...'}"
+            </h1>
             <p className="text-gray-600">Manage performances for this event</p>
           </div>
           <button
@@ -205,24 +139,24 @@ const EventShowsPage: React.FC = () => {
           </button>
         </div>
 
-        {/* Create/Edit Show Form */}
+        {/* Create Show Form */}
         {showCreateForm && (
           <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4">{editingShow ? 'Edit Show' : 'Create New Show'}</h2>
+            <h2 className="text-xl font-bold mb-4">Create New Show</h2>
             <form onSubmit={handleCreateShow} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Venue *</label>
                   <select
                     value={formData.venueId}
-                    onChange={(e) => handleVenueChange(e.target.value)}
+                    onChange={(e) => setFormData({...formData, venueId: e.target.value})}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
                     <option value="">Select venue</option>
                     {venues.map(venue => (
                       <option key={venue.venueId} value={venue.venueId}>
-                        {venue.venueName} - {venue.venueCity} (₹{venue.defaultPriceMin}-₹{venue.defaultPriceMax})
+                        {venue.venueName} - {venue.venueCity}
                       </option>
                     ))}
                   </select>
@@ -238,13 +172,6 @@ const EventShowsPage: React.FC = () => {
                     <option value="English">English</option>
                     <option value="Hindi">Hindi</option>
                     <option value="Tamil">Tamil</option>
-                    <option value="Telugu">Telugu</option>
-                    <option value="Kannada">Kannada</option>
-                    <option value="Malayalam">Malayalam</option>
-                    <option value="Bengali">Bengali</option>
-                    <option value="Marathi">Marathi</option>
-                    <option value="Gujarati">Gujarati</option>
-                    <option value="Punjabi">Punjabi</option>
                   </select>
                 </div>
               </div>
@@ -284,11 +211,6 @@ const EventShowsPage: React.FC = () => {
                     <option value="Live">Live Performance</option>
                     <option value="2D">2D</option>
                     <option value="3D">3D</option>
-                    <option value="IMAX">IMAX</option>
-                    <option value="4DX">4DX</option>
-                    <option value="Dolby Atmos">Dolby Atmos</option>
-                    <option value="Virtual">Virtual Event</option>
-                    <option value="Hybrid">Hybrid</option>
                   </select>
                 </div>
                 <div>
@@ -297,14 +219,8 @@ const EventShowsPage: React.FC = () => {
                     type="number"
                     value={formData.showPriceMin}
                     onChange={(e) => setFormData({...formData, showPriceMin: Number(e.target.value)})}
-                    min={venues.find(v => v.venueId === formData.venueId)?.defaultPriceMin || 0}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
-                  {formData.venueId && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Venue minimum: ₹{venues.find(v => v.venueId === formData.venueId)?.defaultPriceMin}
-                    </p>
-                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Max Price (₹)</label>
@@ -312,14 +228,8 @@ const EventShowsPage: React.FC = () => {
                     type="number"
                     value={formData.showPriceMax}
                     onChange={(e) => setFormData({...formData, showPriceMax: Number(e.target.value)})}
-                    max={venues.find(v => v.venueId === formData.venueId)?.defaultPriceMax || 10000}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   />
-                  {formData.venueId && (
-                    <p className="text-xs text-gray-500 mt-1">
-                      Venue maximum: ₹{venues.find(v => v.venueId === formData.venueId)?.defaultPriceMax}
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -335,7 +245,7 @@ const EventShowsPage: React.FC = () => {
                   type="submit"
                   className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
                 >
-                  {editingShow ? 'Update Show' : 'Create Show'}
+                  Create Show
                 </button>
               </div>
             </form>
@@ -363,13 +273,8 @@ const EventShowsPage: React.FC = () => {
                 <div key={show.showId} className="border border-gray-200 rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-semibold text-gray-900">{show.venueName}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(show.showStatus)}`}>
-                          {getStatusText(show.showStatus)}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-gray-600">
+                      <h3 className="font-semibold text-gray-900">{show.venueName}</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mt-2">
                         <div>
                           <span className="font-medium">Start:</span><br />
                           {new Date(show.showStartTime).toLocaleString()}
@@ -386,26 +291,14 @@ const EventShowsPage: React.FC = () => {
                           <span className="font-medium">Price:</span><br />
                           ₹{show.showPriceMin} - ₹{show.showPriceMax}
                         </div>
-                        <div>
-                          <span className="font-medium">Seats:</span><br />
-                          {show.availableSeats}/{show.totalSeats} available
-                        </div>
                       </div>
                     </div>
-                    <div className="ml-4 flex space-x-2">
-                      <button
-                        onClick={() => handleEditShow(show)}
-                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteShow(show.showId)}
-                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleDeleteShow(show.showId)}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm ml-4"
+                    >
+                      Delete
+                    </button>
                   </div>
                 </div>
               ))}
@@ -417,4 +310,4 @@ const EventShowsPage: React.FC = () => {
   );
 };
 
-export default EventShowsPage;
+export default ShowManagementPage;

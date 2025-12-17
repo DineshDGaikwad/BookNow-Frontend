@@ -1,61 +1,63 @@
 import api from './api';
 
-export interface PendingApproval {
-  id: string;
-  approvalType: number;
-  targetEntityId: string;
-  requestedByUserId: string;
-  status: number;
-  payloadSnapshot: string;
-  createdAt: string;
-  updatedAt?: string;
-}
-
-export interface VenueApproval {
+export interface AdminVenueResponse {
   venueId: string;
   venueName: string;
-  organizerId: string;
-  organizerName: string;
-  venueAddress?: string;
-  venueCity?: string;
+  venueAddress: string;
+  venueCity: string;
+  venueState: string;
   venueCapacity: number;
+  venueStatus: string;
+  createdBy: string;
   createdAt: string;
+}
+
+export interface UpdateVenueRequest {
+  venueName: string;
+  venueAddress: string;
+  venueCity: string;
+  venueState: string;
+  venueCapacity: number;
+  venueContactInfo?: string;
+}
+
+export interface VenueApprovalRequest {
+  rejectionReason?: string;
 }
 
 export const adminAPI = {
-  getPendingApprovals: async (): Promise<PendingApproval[]> => {
-    const token = localStorage.getItem('accessToken');
-    const response = await fetch('http://localhost:5089/api/admin/approvals/pending', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
+  // Venue Management
+  getAllVenues: async (): Promise<AdminVenueResponse[]> => {
+    const response = await api.get('/admin/venues');
+    return response.data;
   },
 
-  approveVenue: async (venueId: string): Promise<void> => {
-    const token = localStorage.getItem('accessToken');
-    const response = await fetch(`http://localhost:5089/api/admin/venues/${venueId}/approve`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  getPendingVenues: async (): Promise<AdminVenueResponse[]> => {
+    const response = await api.get('/admin/venues/pending');
+    return response.data;
   },
 
-  rejectVenue: async (venueId: string, reason?: string): Promise<void> => {
-    const token = localStorage.getItem('accessToken');
-    const response = await fetch(`http://localhost:5089/api/admin/venues/${venueId}/reject`, {
-      method: 'PUT',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ reason })
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  getVenueById: async (venueId: string): Promise<AdminVenueResponse> => {
+    const response = await api.get(`/admin/venues/${venueId}`);
+    return response.data;
+  },
+
+  updateVenue: async (venueId: string, data: UpdateVenueRequest): Promise<AdminVenueResponse> => {
+    const response = await api.put(`/admin/venues/${venueId}`, data);
+    return response.data;
+  },
+
+  deleteVenue: async (venueId: string): Promise<void> => {
+    await api.delete(`/admin/venues/${venueId}`);
+  },
+
+  approveVenue: async (venueId: string): Promise<AdminVenueResponse> => {
+    const response = await api.put(`/admin/venues/${venueId}/approve`);
+    return response.data;
+  },
+
+  rejectVenue: async (venueId: string, data: VenueApprovalRequest): Promise<AdminVenueResponse> => {
+    const response = await api.put(`/admin/venues/${venueId}/reject`, data);
+    return response.data;
   }
 };

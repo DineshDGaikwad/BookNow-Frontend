@@ -32,7 +32,8 @@ import OrganizerEventsPage from './pages/organizer/OrganizerEventsPage';
 import CreateEventPage from './pages/organizer/CreateEventPage';
 import VenuesPage from './pages/organizer/VenuesPage';
 import CreateVenuePage from './pages/organizer/CreateVenuePage';
-import EventShowsPage from './pages/organizer/EventShowsPage';
+import FastShowManagement from './pages/organizer/FastShowManagement';
+import TestAPI from './pages/organizer/TestAPI';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -149,9 +150,13 @@ const AppContent: React.FC = () => {
             path="/organizer/events/:eventId/shows" 
             element={
               <ProtectedRoute role="Organizer">
-                <EventShowsPage />
+                <FastShowManagement />
               </ProtectedRoute>
             } 
+          />
+          <Route 
+            path="/test-api" 
+            element={<TestAPI />} 
           />
           
           {/* Admin Routes */}

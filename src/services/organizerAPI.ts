@@ -33,7 +33,19 @@ export interface CreateEventRequest {
   eventDescription?: string;
   eventCategory: string;
   eventGenre?: string;
+  venueId: string;
   posterUrl?: string;
+}
+
+export interface VenueResponse {
+  venueId: string;
+  venueName: string;
+  venueAddress: string;
+  venueCity: string;
+  venueState: string;
+  venueCapacity: number;
+  venueType: string;
+  venueStatus: string;
 }
 
 export interface EventResponse {
@@ -77,5 +89,10 @@ export const organizerAPI = {
 
   deleteEvent: async (eventId: string, organizerId: string): Promise<void> => {
     await api.delete(`/organizer/events/${eventId}?organizerId=${organizerId}`);
+  },
+
+  getVenues: async (organizerId: string): Promise<VenueResponse[]> => {
+    const response = await api.get(`/organizer/venues?organizerId=${organizerId}`);
+    return response.data;
   }
 };
