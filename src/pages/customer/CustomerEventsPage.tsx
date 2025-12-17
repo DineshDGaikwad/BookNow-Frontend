@@ -1,20 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Filter, SlidersHorizontal, Grid3X3, List, X, Search } from 'lucide-react';
 import Header from '../../components/common/Header';
-import { customerAPI, CustomerEvent } from '../../services/customerAPI';
+import { EventCard } from '../../components/events/EventCard';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Badge } from '../../components/ui/badge';
+import { customerAPI, CustomerEvent, CustomerShow } from '../../services/customerAPI';
 
 const CustomerEventsPage: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [events, setEvents] = useState<CustomerEvent[]>([]);
   const [filteredEvents, setFilteredEvents] = useState<CustomerEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchParams.get('search') || '');
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get('category') || '');
+  const [view, setView] = useState<'grid' | 'list'>('grid');
+  const [activeFilters, setActiveFilters] = useState<string[]>([]);
 
   const categories = ['All', 'Music', 'Theatre', 'Comedy', 'Sports', 'Conference', 'Workshop', 'Festival', 'Exhibition', 'Dance'];
+  const cities = ['All Cities', 'Mumbai', 'Delhi', 'Bangalore', 'Chennai', 'Kolkata', 'Pune', 'Hyderabad'];
 
   useEffect(() => {
     loadEvents();
   }, []);
+
+  useEffect(() => {
+    // Refresh events when search params change
+    loadEvents();
+  }, [searchParams]);
 
   useEffect(() => {
     filterEvents();
@@ -22,10 +36,17 @@ const CustomerEventsPage: React.FC = () => {
 
   const loadEvents = async () => {
     try {
-      const data = await customerAPI.getEvents();
+      setLoading(true);
+      const params: any = {};
+      if (selectedCategory && selectedCategory !== 'All') params.category = selectedCategory;
+      if (searchTerm) params.search = searchTerm;
+      
+      const data = await customerAPI.getEvents(params);
       setEvents(data);
+      console.log('Loaded events:', data.length);
     } catch (error) {
       console.error('Failed to load events:', error);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -49,12 +70,43 @@ const CustomerEventsPage: React.FC = () => {
     setFilteredEvents(filtered);
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    const params = new URLSearchParams(searchParams);
+    if (searchTerm) {
+      params.set('search', searchTerm);
+    } else {
+      params.delete('search');
+    }
+    setSearchParams(params);
+    loadEvents();
+  };
+
+  const handleCategoryChange = (category: string) => {
+    const newCategory = category === 'All' ? '' : category;
+    setSelectedCategory(newCategory);
+    const params = new URLSearchParams(searchParams);
+    if (newCategory) {
+      params.set('category', newCategory);
+    } else {
+      params.delete('category');
+    }
+    setSearchParams(params);
+  };
+
+  const removeFilter = (filter: string) => {
+    setActiveFilters(activeFilters.filter(f => f !== filter));
+  };
+
   const getNextShow = (event: CustomerEvent) => {
-    const upcomingShows = event.upcomingShows
-      .filter(show => new Date(show.showStartTime) > new Date())
+    if (!event.shows || event.shows.length === 0) {
+      return null;
+    }
+    const upcomingShows = event.shows
+      .filter((show) => new Date(show.showStartTime) > new Date())
       .sort((a, b) => new Date(a.showStartTime).getTime() - new Date(b.showStartTime).getTime());
     
-    return upcomingShows[0];
+    return upcomingShows[0] || null;
   };
 
   if (loading) {
@@ -64,8 +116,8 @@ const CustomerEventsPage: React.FC = () => {
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="animate-pulse space-y-6">
             <div className="h-8 bg-gray-200 rounded w-1/3"></div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[...Array(6)].map((_, i) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[...Array(8)].map((_, i) => (
                 <div key={i} className="h-80 bg-gray-200 rounded-xl"></div>
               ))}
             </div>
@@ -79,49 +131,99 @@ const CustomerEventsPage: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4">Discover Amazing Events</h1>
-          <p className="text-xl md:text-2xl text-blue-100 mb-8">Find and book tickets for the best events in your city</p>
-          
-          {/* Search Bar */}
-          <div className="max-w-2xl mx-auto">
+      <div className="container px-4 py-8 max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold mb-2">Discover Events</h1>
+          <p className="text-gray-600">
+            {searchTerm ? `Search results for "${searchTerm}"` : "Find your next unforgettable experience"}
+          </p>
+        </div>
+
+        {/* Filters Bar */}
+        <div className="flex flex-wrap items-center gap-4 mb-6">
+          {/* Search */}
+          <form onSubmit={handleSearch} className="flex-1 min-w-[200px] max-w-md">
             <div className="relative">
-              <input
-                type="text"
-                placeholder="Search events, artists, venues..."
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input 
+                placeholder="Search events..." 
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-6 py-4 text-gray-900 rounded-full text-lg focus:outline-none focus:ring-4 focus:ring-blue-300"
+                className="pl-10"
               />
-              <button className="absolute right-2 top-2 bg-blue-500 text-white p-2 rounded-full hover:bg-blue-600 transition-colors">
-                🔍
-              </button>
             </div>
-          </div>
-        </div>
-      </div>
+          </form>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Category Filter */}
-        <div className="mb-8">
-          <div className="flex flex-wrap gap-2 justify-center">
-            {categories.map(category => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category === 'All' ? '' : category)}
-                className={`px-6 py-2 rounded-full font-medium transition-all ${
-                  (selectedCategory === category) || (category === 'All' && !selectedCategory)
-                    ? 'bg-blue-500 text-white shadow-lg'
-                    : 'bg-white text-gray-700 hover:bg-blue-50 border border-gray-200'
-                }`}
-              >
-                {category}
-              </button>
+          {/* Category Select */}
+          <select 
+            value={selectedCategory || 'All'}
+            onChange={(e) => handleCategoryChange(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white"
+          >
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
             ))}
+          </select>
+
+          {/* City Select */}
+          <select className="px-4 py-2 border border-gray-300 rounded-lg bg-white">
+            {cities.map((city) => (
+              <option key={city} value={city}>{city}</option>
+            ))}
+          </select>
+
+          {/* Sort */}
+          <select className="px-4 py-2 border border-gray-300 rounded-lg bg-white">
+            <option value="popular">Most Popular</option>
+            <option value="date">Date</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="rating">Rating</option>
+          </select>
+
+          {/* View Toggle */}
+          <div className="flex border border-gray-300 rounded-lg overflow-hidden">
+            <Button
+              variant={view === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setView('grid')}
+              className="rounded-none"
+            >
+              <Grid3X3 className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={view === 'list' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setView('list')}
+              className="rounded-none"
+            >
+              <List className="h-4 w-4" />
+            </Button>
           </div>
         </div>
+
+        {/* Active Filters */}
+        {activeFilters.length > 0 && (
+          <div className="flex flex-wrap gap-2 mb-6">
+            {activeFilters.map((filter) => (
+              <Badge key={filter} variant="secondary" className="gap-1">
+                {filter}
+                <button onClick={() => removeFilter(filter)}>
+                  <X className="h-3 w-3" />
+                </button>
+              </Badge>
+            ))}
+            <Button variant="ghost" size="sm" onClick={() => setActiveFilters([])}>
+              Clear all
+            </Button>
+          </div>
+        )}
+
+        {/* Results Count */}
+        <p className="text-sm text-gray-600 mb-6">
+          Showing {filteredEvents.length} events
+        </p>
 
         {/* Events Grid */}
         {filteredEvents.length === 0 ? (
@@ -131,86 +233,44 @@ const CustomerEventsPage: React.FC = () => {
             <p className="text-gray-600">Try adjusting your search or category filter</p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredEvents.map(event => {
+          <div className={view === 'grid' 
+            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+            : "flex flex-col gap-4"
+          }>
+            {filteredEvents.map((event, index) => {
               const nextShow = getNextShow(event);
               return (
-                <Link
+                <div 
                   key={event.eventId}
-                  to={`/events/${event.eventId}`}
-                  className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
+                  className="animate-slide-up"
+                  style={{ animationDelay: `${index * 0.05}s` }}
                 >
-                  {/* Event Image */}
-                  <div className="relative h-48 bg-gradient-to-br from-blue-400 to-purple-500 overflow-hidden">
-                    {event.posterUrl ? (
-                      <img 
-                        src={event.posterUrl} 
-                        alt={event.eventTitle}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center text-white text-4xl">
-                        🎪
-                      </div>
-                    )}
-                    <div className="absolute top-3 right-3">
-                      <span className="bg-black bg-opacity-50 text-white px-2 py-1 rounded-full text-xs font-medium">
-                        {event.eventCategory}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Event Details */}
-                  <div className="p-4">
-                    <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
-                      {event.eventTitle}
-                    </h3>
-                    
-                    {event.eventGenre && (
-                      <p className="text-sm text-gray-500 mb-2">{event.eventGenre}</p>
-                    )}
-
-                    {nextShow ? (
-                      <div className="space-y-2">
-                        <div className="flex items-center text-sm text-gray-600">
-                          <span className="mr-2">📍</span>
-                          <span className="truncate">{nextShow.venueName}, {nextShow.venueCity}</span>
-                        </div>
-                        <div className="flex items-center text-sm text-gray-600">
-                          <span className="mr-2">📅</span>
-                          <span>{new Date(nextShow.showStartTime).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-gray-600">
-                            <span className="mr-2">🎫</span>
-                            <span>From ₹{nextShow.showPriceMin}</span>
-                          </div>
-                          <div className="text-xs text-green-600 font-medium">
-                            {nextShow.availableSeats} seats left
-                          </div>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="text-sm text-gray-500">
-                        <span className="mr-2">📅</span>
-                        <span>Shows coming soon</span>
-                      </div>
-                    )}
-
-                    <div className="mt-4 pt-3 border-t border-gray-100">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-500">{event.showCount} shows</span>
-                        <span className="text-blue-500 font-medium text-sm group-hover:text-blue-700">
-                          Book Now →
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+                  <EventCard
+                    id={event.eventId}
+                    title={event.eventTitle}
+                    image={event.posterUrl}
+                    category={event.eventCategory}
+                    genre={event.eventGenre}
+                    venue={event.venueName || 'TBA'}
+                    city={event.venueCity}
+                    date={event.nextShowDate ? new Date(event.nextShowDate).toLocaleDateString() : 'TBA'}
+                    price={event.priceMin ? `₹${event.priceMin}` : 'TBA'}
+                    rating={event.averageRating}
+                    featured={index < 2}
+                    availableSeats={nextShow?.availableSeats}
+                  />
+                </div>
               );
             })}
           </div>
         )}
+
+        {/* Load More */}
+        <div className="text-center mt-12">
+          <Button variant="outline" size="lg">
+            Load More Events
+          </Button>
+        </div>
       </div>
     </div>
   );

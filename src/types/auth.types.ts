@@ -4,6 +4,11 @@ export interface User {
   name: string;
   role: 'Customer' | 'Organizer' | 'Admin';
   profileCompleted: boolean;
+  phone?: string;
+  address?: string;
+  city?: string;
+  dateOfBirth?: string;
+  createdAt?: string;
 }
 
 export interface AuthResponse {
