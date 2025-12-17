@@ -1,13 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store';
 import AdminSidebar from '../../components/admin/AdminSidebar';
-import DashboardStats from '../../components/admin/DashboardStats';
-import PendingApprovals from '../../components/admin/PendingApprovals';
-import RecentActions from '../../components/admin/RecentActions';
+import DashboardContent from '../../components/admin/DashboardContent';
 import ApprovalsContent from '../../components/admin/ApprovalsContent';
 import UserManagement from '../../components/admin/UserManagement';
 import VenueManagement from '../../components/admin/VenueManagement';
+import EventOverview from '../../components/admin/EventOverview';
+import AuditLogs from '../../components/admin/AuditLogs';
+import SystemSettings from '../../components/admin/SystemSettings';
 
 const AdminDashboard: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -32,13 +33,7 @@ const AdminDashboard: React.FC = () => {
 
         <main className="p-6">
           {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-              <DashboardStats />
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <PendingApprovals />
-                <RecentActions />
-              </div>
-            </div>
+            <DashboardContent onNavigate={setActiveTab} />
           )}
           
           {activeTab === 'approvals' && (
@@ -53,18 +48,16 @@ const AdminDashboard: React.FC = () => {
             <VenueManagement />
           )}
           
+          {activeTab === 'eventoverview' && (
+            <EventOverview />
+          )}
+          
           {activeTab === 'audit' && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Audit Logs</h2>
-              <p className="text-gray-600">Audit logs functionality coming soon...</p>
-            </div>
+            <AuditLogs />
           )}
           
           {activeTab === 'settings' && (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">System Settings</h2>
-              <p className="text-gray-600">System settings functionality coming soon...</p>
-            </div>
+            <SystemSettings />
           )}
         </main>
       </div>

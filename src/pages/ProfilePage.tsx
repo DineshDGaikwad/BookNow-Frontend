@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { User, Mail, Phone, MapPin, Calendar, Edit2, Save, X } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Edit2, Save, X } from 'lucide-react';
 import Header from '../components/common/Header';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';

@@ -8,6 +8,7 @@ const initialState: AuthState = {
   isLoading: false,
   error: null,
   isAuthenticated: false,
+  isInitialized: false,
 };
 
 // Async thunks
@@ -134,6 +135,9 @@ const authSlice = createSlice({
     },
     setToken: (state, action: PayloadAction<string>) => {
       state.token = action.payload;
+    },
+    initializeAuth: (state) => {
+      state.isInitialized = true;
     }
   },
   extraReducers: (builder) => {
@@ -237,5 +241,5 @@ const authSlice = createSlice({
   },
 });
 
-export const { logout, clearError, setUser, setToken } = authSlice.actions;
+export const { logout, clearError, setUser, setToken, initializeAuth } = authSlice.actions;
 export default authSlice.reducer;
