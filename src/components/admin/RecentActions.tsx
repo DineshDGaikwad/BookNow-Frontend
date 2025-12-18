@@ -1,113 +1,116 @@
-import React, { useEffect, useState } from 'react';
-
-interface AdminAction {
-  id: string;
-  action: string;
-  target: string;
-  admin: string;
-  timestamp: string;
-  type: 'approval' | 'user' | 'system';
-}
+import React, { useState, useEffect } from 'react';
+import { AdminAction } from '../../types/admin.types';
+import adminService from '../../services/adminService';
 
 const RecentActions: React.FC = () => {
   const [actions, setActions] = useState<AdminAction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch from API
-    // Mock data for now
-    setTimeout(() => {
-      setActions([
-        {
-          id: '1',
-          action: 'Approved organizer registration',
-          target: 'EventPro Ltd.',
-          admin: 'Admin User',
-          timestamp: '2024-01-15T10:30:00Z',
-          type: 'approval'
-        },
-        {
-          id: '2',
-          action: 'Suspended user account',
-          target: 'user@example.com',
-          admin: 'Admin User',
-          timestamp: '2024-01-15T09:15:00Z',
-          type: 'user'
-        },
-        {
-          id: '3',
-          action: 'Updated system settings',
-          target: 'Payment Gateway Config',
-          admin: 'Admin User',
-          timestamp: '2024-01-14T16:45:00Z',
-          type: 'system'
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
+    loadRecentActions();
   }, []);
 
-  const getActionIcon = (type: string) => {
-    switch (type) {
-      case 'approval': return '✅';
-      case 'user': return '👤';
-      case 'system': return '⚙️';
-      default: return '📝';
+  const loadRecentActions = async () => {
+    try {
+      const data = await adminService.getRecentActions();
+      setActions(data);
+    } catch (error) {
+      console.error('Failed to load recent actions:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getActionColor = (type: string) => {
-    switch (type) {
-      case 'approval': return 'text-green-600';
-      case 'user': return 'text-blue-600';
-      case 'system': return 'text-purple-600';
-      default: return 'text-gray-600';
+  const getActionColor = (actionType: string) => {
+    switch (actionType) {
+      case 'ApprovalGranted': return 'text-green-600 bg-green-50';
+      case 'UserSuspended': return 'text-red-600 bg-red-50';
+      case 'ApprovalRejected': return 'text-orange-600 bg-orange-50';
+      case 'SystemSettingUpdated': return 'text-blue-600 bg-blue-50';
+      case 'UserActivated': return 'text-green-600 bg-green-50';
+      case 'RoleChanged': return 'text-purple-600 bg-purple-50';
+      default: return 'text-gray-600 bg-gray-50';
     }
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Actions</h3>
-        <div className="animate-pulse space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const getActionIcon = (actionType: string) => {
+    switch (actionType) {
+      case 'ApprovalGranted': return '✅';
+      case 'UserSuspended': return '🚫';
+      case 'ApprovalRejected': return '❌';
+      case 'SystemSettingUpdated': return '⚙️';
+      case 'UserActivated': return '✅';
+      case 'RoleChanged': return '👤';
+      default: return 'ℹ️';
+    }
+  };
+
+  const formatActionType = (actionType: string | any) => {
+    if (typeof actionType !== 'string') {
+      return String(actionType);
+    }
+    return actionType.replace(/([A-Z])/g, ' $1').trim();
+  };
+
+  const getTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const actionDate = new Date(dateString);
+    const diffInMinutes = Math.floor((now.getTime() - actionDate.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+    return `${Math.floor(diffInMinutes / 1440)} days ago`;
+  };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Actions</h3>
-      
-      <div className="space-y-3">
-        {actions.map((action) => (
-          <div key={action.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
-            <div className={`text-lg ${getActionColor(action.type)}`}>
-              {getActionIcon(action.type)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900">{action.action}</p>
-              <p className="text-sm text-gray-600 truncate">{action.target}</p>
-              <div className="flex items-center space-x-2 mt-1">
-                <span className="text-xs text-gray-500">by {action.admin}</span>
-                <span className="text-xs text-gray-400">•</span>
-                <span className="text-xs text-gray-500">
-                  {new Date(action.timestamp).toLocaleString()}
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div className="p-6 border-b border-gray-200">
+        <h3 className="text-lg font-semibold text-gray-900">Recent Actions</h3>
+        <p className="text-sm text-gray-600 mt-1">Latest administrative activities</p>
       </div>
-      
-      {actions.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          No recent actions
-        </div>
-      )}
+      <div className="p-6">
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-start space-x-3 animate-pulse">
+                <div className="w-8 h-8 bg-gray-200 rounded-full"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : actions.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-4xl mb-4">📋</div>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">No recent actions</h4>
+            <p className="text-gray-500">Administrative activities will appear here</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {actions.map((action) => (
+              <div key={action.id} className="flex items-start space-x-3">
+                <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm ${getActionColor(action.actionType)}`}>
+                  {getActionIcon(action.actionType)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900">
+                    {formatActionType(action.actionType)}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {action.description}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {getTimeAgo(action.createdAt)}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

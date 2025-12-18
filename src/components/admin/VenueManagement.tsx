@@ -67,7 +67,7 @@ const VenueManagement: React.FC = () => {
       venueCity: venue.venueCity,
       venueState: venue.venueState,
       venueCapacity: venue.venueCapacity,
-      venueContactInfo: ''
+      venueContactInfo: venue.venueContactInfo || ''
     });
   };
 

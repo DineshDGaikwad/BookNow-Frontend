@@ -79,7 +79,7 @@ const ApprovalsPage: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {approvals.map((approval) => (
+              {approvals.map((approval: ApprovalRequest) => (
                 <div key={approval.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">

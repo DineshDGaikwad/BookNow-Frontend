@@ -40,7 +40,7 @@ export interface SystemSetting {
   key: string;
   value: string;
   description?: string;
-  category: string;
+  category?: string;
   isEditable: boolean;
   createdAt: string;
   updatedAt?: string;
@@ -49,13 +49,21 @@ export interface SystemSetting {
 export interface DashboardStats {
   pendingApprovals: number;
   totalUsers: number;
+  organizerUsers: number;
+  customerUsers: number;
   activeEvents: number;
   totalRevenue: number;
-  monthlyGrowth: {
+  totalBookings: number;
+  monthlyGrowth?: {
     users: number;
     events: number;
     revenue: number;
   };
+}
+
+export interface UserAnalytics {
+  usersByType: { type: string; count: number }[];
+  monthlyRegistrations: { month: string; count: number }[];
 }
 
 export interface ApprovalActionRequest {
