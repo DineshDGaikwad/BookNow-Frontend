@@ -81,6 +81,31 @@ class AdminService {
     const response = await api.get('/admin/events');
     return response.data;
   }
+
+  async getEventById(eventId: string): Promise<any> {
+    const response = await api.get(`/admin/events/${eventId}`);
+    return response.data;
+  }
+
+  async getEventShows(eventId: string): Promise<any[]> {
+    const response = await api.get(`/admin/events/${eventId}/shows`);
+    return response.data;
+  }
+
+  async getEventBookings(eventId: string): Promise<any[]> {
+    const response = await api.get(`/admin/events/${eventId}/bookings`);
+    return response.data;
+  }
+
+  async getAllBookings(): Promise<any[]> {
+    const response = await api.get('/admin/bookings');
+    return response.data;
+  }
+
+  async getBookingById(bookingId: string): Promise<any> {
+    const response = await api.get(`/admin/bookings/${bookingId}`);
+    return response.data;
+  }
 }
 
 const adminService = new AdminService();

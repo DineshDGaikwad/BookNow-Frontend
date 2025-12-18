@@ -126,7 +126,13 @@ const DashboardStats: React.FC<DashboardStatsProps> = ({ onNavigate }) => {
       </div>
 
       {/* Active Events */}
-      <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-sm border border-purple-200 p-4 md:p-6">
+      <div 
+        className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-sm border border-purple-200 p-4 md:p-6 cursor-pointer hover:shadow-md transition-all duration-200 hover:scale-105 active:scale-95"
+        onClick={() => onNavigate?.('eventoverview')}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => e.key === 'Enter' && onNavigate?.('eventoverview')}
+      >
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-purple-700">Active Events</p>

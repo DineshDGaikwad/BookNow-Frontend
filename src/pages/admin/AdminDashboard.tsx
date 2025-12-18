@@ -7,8 +7,9 @@ import ApprovalsContent from '../../components/admin/ApprovalsContent';
 import UserManagement from '../../components/admin/UserManagement';
 import VenueManagement from '../../components/admin/VenueManagement';
 import EventOverview from '../../components/admin/EventOverview';
+import BookingOverview from '../../components/admin/BookingOverview';
 import AuditLogs from '../../components/admin/AuditLogs';
-import SystemSettings from '../../components/admin/SystemSettings';
+
 
 const AdminDashboard: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -52,13 +53,15 @@ const AdminDashboard: React.FC = () => {
             <EventOverview />
           )}
           
+          {activeTab === 'bookingoverview' && (
+            <BookingOverview />
+          )}
+          
           {activeTab === 'audit' && (
             <AuditLogs />
           )}
           
-          {activeTab === 'settings' && (
-            <SystemSettings />
-          )}
+
         </main>
       </div>
     </div>

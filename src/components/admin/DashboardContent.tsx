@@ -69,7 +69,10 @@ const DashboardContent: React.FC<DashboardContentProps> = ({ onNavigate }) => {
                 You have {stats.pendingApprovals} item{stats.pendingApprovals > 1 ? 's' : ''} waiting for your review and approval.
               </p>
             </div>
-            <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors">
+            <button 
+              onClick={() => onNavigate?.('approvals')}
+              className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+            >
               Review Now
             </button>
           </div>
