@@ -52,8 +52,10 @@ export interface SeatInfo {
   seatNumber: string;
   row?: string;
   seatRowNumber?: string;
-  section: string;
-  price: number;
+  section?: string;
+  seatType?: string;
+  price?: number;
+  seatPrice?: number;
   status: 'Available' | 'Booked' | 'Locked' | 'Selected';
   lockedBy?: string;
   lockedUntil?: string;
@@ -82,14 +84,20 @@ export interface EventReview {
 }
 
 export const customerAPI = {
-  // Events
-  getEvents: async (params?: { category?: string; search?: string; city?: string }): Promise<CustomerEvent[]> => {
+  // Events with caching
+  getEvents: async (params?: { category?: string; search?: string; city?: string; limit?: number }): Promise<CustomerEvent[]> => {
     const searchParams = new URLSearchParams();
     if (params?.category) searchParams.append('category', params.category);
     if (params?.search) searchParams.append('search', params.search);
     if (params?.city) searchParams.append('city', params.city);
+    if (params?.limit) searchParams.append('limit', params.limit.toString());
     
     const response = await api.get(`/customer/events?${searchParams}`);
+    return response.data;
+  },
+
+  getFeaturedEvents: async (limit: number = 6): Promise<CustomerEvent[]> => {
+    const response = await api.get(`/customer/events?limit=${limit}&featured=true`);
     return response.data;
   },
 
@@ -111,7 +119,7 @@ export const customerAPI = {
     return response.data;
   },
 
-  getShowSeats: async (showId: string, page: number = 1, pageSize: number = 100): Promise<SeatMap> => {
+  getShowSeats: async (showId: string, page: number = 1, pageSize: number = 50): Promise<SeatMap> => {
     const response = await api.get(`/customer/shows/${showId}/seats?page=${page}&pageSize=${pageSize}`);
     return response.data;
   },

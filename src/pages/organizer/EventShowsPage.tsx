@@ -85,7 +85,13 @@ const EventShowsPage: React.FC = () => {
         }
         toast.success('Show updated successfully!');
       } else {
-        await showAPI.createShow(userId, formData);
+        // Convert datetime-local format to ISO format
+        const showData = {
+          ...formData,
+          showStartTime: new Date(formData.showStartTime).toISOString(),
+          showEndTime: new Date(formData.showEndTime).toISOString()
+        };
+        await showAPI.createShow(userId, showData);
         toast.success('Show created successfully!');
       }
       resetForm();
@@ -170,14 +176,14 @@ const EventShowsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-black">
         <Header />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-8 bg-gray-800 rounded w-1/3"></div>
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+                <div key={i} className="h-32 bg-gray-800 rounded-xl"></div>
               ))}
             </div>
           </div>
@@ -187,19 +193,19 @@ const EventShowsPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-black">
       <Header />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <Link to="/organizer/events" className="text-blue-500 hover:underline mb-2 block">← Back to Events</Link>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Shows for "{event?.eventTitle}"</h1>
-            <p className="text-gray-600">Manage performances for this event</p>
+            <Link to="/organizer/events" className="text-blue-400 hover:text-blue-300 hover:underline mb-2 block">← Back to Events</Link>
+            <h1 className="text-3xl font-bold text-white mb-2">Shows for "{event?.eventTitle}"</h1>
+            <p className="text-gray-300">Manage performances for this event</p>
           </div>
           <button
             onClick={() => setShowCreateForm(true)}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all"
+            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all"
           >
             Create New Show
           </button>
@@ -207,17 +213,17 @@ const EventShowsPage: React.FC = () => {
 
         {/* Create/Edit Show Form */}
         {showCreateForm && (
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4">{editingShow ? 'Edit Show' : 'Create New Show'}</h2>
+          <div className="bg-gray-900 rounded-xl shadow-lg p-6 mb-8 border border-gray-800">
+            <h2 className="text-xl font-bold text-white mb-4">{editingShow ? 'Edit Show' : 'Create New Show'}</h2>
             <form onSubmit={handleCreateShow} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Venue *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Venue *</label>
                   <select
                     value={formData.venueId}
                     onChange={(e) => handleVenueChange(e.target.value)}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
                   >
                     <option value="">Select venue</option>
                     {venues.map(venue => (
@@ -228,11 +234,11 @@ const EventShowsPage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Language</label>
                   <select
                     value={formData.showLanguage}
                     onChange={(e) => setFormData({...formData, showLanguage: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
                   >
                     <option value="">Select language</option>
                     <option value="English">English</option>
@@ -251,34 +257,34 @@ const EventShowsPage: React.FC = () => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Start Time *</label>
                   <input
                     type="datetime-local"
                     value={formData.showStartTime}
                     onChange={(e) => setFormData({...formData, showStartTime: e.target.value})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Time *</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">End Time *</label>
                   <input
                     type="datetime-local"
                     value={formData.showEndTime}
                     onChange={(e) => setFormData({...formData, showEndTime: e.target.value})}
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Format</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Format</label>
                   <select
                     value={formData.showFormat}
                     onChange={(e) => setFormData({...formData, showFormat: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
                   >
                     <option value="">Select format</option>
                     <option value="Live">Live Performance</option>
@@ -292,31 +298,31 @@ const EventShowsPage: React.FC = () => {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Price (₹)</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Min Price (₹)</label>
                   <input
                     type="number"
                     value={formData.showPriceMin}
                     onChange={(e) => setFormData({...formData, showPriceMin: Number(e.target.value)})}
                     min={venues.find(v => v.venueId === formData.venueId)?.defaultPriceMin || 0}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
                   />
                   {formData.venueId && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-400 mt-1">
                       Venue minimum: ₹{venues.find(v => v.venueId === formData.venueId)?.defaultPriceMin}
                     </p>
                   )}
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Price (₹)</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Max Price (₹)</label>
                   <input
                     type="number"
                     value={formData.showPriceMax}
                     onChange={(e) => setFormData({...formData, showPriceMax: Number(e.target.value)})}
                     max={venues.find(v => v.venueId === formData.venueId)?.defaultPriceMax || 10000}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
                   />
                   {formData.venueId && (
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-gray-400 mt-1">
                       Venue maximum: ₹{venues.find(v => v.venueId === formData.venueId)?.defaultPriceMax}
                     </p>
                   )}
@@ -327,13 +333,13 @@ const EventShowsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={resetForm}
-                  className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
+                  className="flex-1 bg-gray-700 text-white py-2 rounded-lg hover:bg-gray-600 border border-gray-600"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
+                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700"
                 >
                   {editingShow ? 'Update Show' : 'Create Show'}
                 </button>
@@ -343,16 +349,16 @@ const EventShowsPage: React.FC = () => {
         )}
 
         {/* Shows List */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4">Shows ({shows.length})</h2>
+        <div className="bg-gray-900 rounded-xl shadow-lg p-6 border border-gray-800">
+          <h2 className="text-xl font-bold text-white mb-4">Shows ({shows.length})</h2>
           {shows.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-6xl mb-4">🎭</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Shows Yet</h3>
-              <p className="text-gray-600 mb-6">Create your first show to start selling tickets</p>
+              <h3 className="text-xl font-semibold text-white mb-2">No Shows Yet</h3>
+              <p className="text-gray-300 mb-6">Create your first show to start selling tickets</p>
               <button
                 onClick={() => setShowCreateForm(true)}
-                className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600"
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
               >
                 Create First Show
               </button>
@@ -360,16 +366,16 @@ const EventShowsPage: React.FC = () => {
           ) : (
             <div className="space-y-4">
               {shows.map(show => (
-                <div key={show.showId} className="border border-gray-200 rounded-lg p-4">
+                <div key={show.showId} className="border border-gray-700 rounded-lg p-4 bg-gray-800">
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="font-semibold text-gray-900">{show.venueName}</h3>
+                        <h3 className="font-semibold text-white">{show.venueName}</h3>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(show.showStatus)}`}>
                           {getStatusText(show.showStatus)}
                         </span>
                       </div>
-                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-gray-600">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm text-gray-300">
                         <div>
                           <span className="font-medium">Start:</span><br />
                           {new Date(show.showStartTime).toLocaleString()}
@@ -395,13 +401,13 @@ const EventShowsPage: React.FC = () => {
                     <div className="ml-4 flex space-x-2">
                       <button
                         onClick={() => handleEditShow(show)}
-                        className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600 text-sm"
+                        className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 text-sm"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDeleteShow(show.showId)}
-                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
+                        className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 text-sm"
                       >
                         Delete
                       </button>

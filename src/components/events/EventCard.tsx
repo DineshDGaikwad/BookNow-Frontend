@@ -58,7 +58,7 @@ export function EventCard({
         
         {/* Badges */}
         <div className="absolute top-3 left-3 flex gap-2">
-          <Badge variant="glass">{category}</Badge>
+          <Badge variant="secondary">{category}</Badge>
           {genre && <Badge variant="secondary">{genre}</Badge>}
         </div>
 

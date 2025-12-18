@@ -33,7 +33,7 @@ export interface CreateEventRequest {
   eventDescription?: string;
   eventCategory: string;
   eventGenre?: string;
-  venueId: string;
+  venueId?: string;
   posterUrl?: string;
 }
 

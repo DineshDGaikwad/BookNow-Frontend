@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { User, Mail, Phone, MapPin, Calendar, Edit2, Save, X } from 'lucide-react';
-import Header from '../components/common/Header';
+import { User, Mail, Phone, Calendar, Edit2, Save, X } from 'lucide-react';
+import { Navbar } from '../components/layout/Navbar';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { RootState } from '../store';
 import { toast } from 'react-toastify';
+import { profileService } from '../services/profileService';
 
 const ProfilePage: React.FC = () => {
   const { user } = useSelector((state: RootState) => state.auth);
@@ -41,11 +42,22 @@ const ProfilePage: React.FC = () => {
   };
 
   const handleSave = async () => {
+    if (!user) return;
+    
     try {
+      await profileService.updateProfile(user.userId, {
+        name: formData.name,
+        phone: formData.phone,
+        address: formData.address,
+        city: formData.city,
+        dateOfBirth: formData.dateOfBirth
+      });
+      
       toast.success('Profile updated successfully');
       setIsEditing(false);
     } catch (error) {
       toast.error('Failed to update profile');
+      console.error('Profile update error:', error);
     }
   };
 
@@ -63,11 +75,11 @@ const ProfilePage: React.FC = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
+      <div className="min-h-screen bg-background">
+        <Navbar />
         <div className="max-w-4xl mx-auto px-4 py-8">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-gray-900">Please log in to view your profile</h1>
+            <h1 className="text-2xl font-bold">Please log in to view your profile</h1>
           </div>
         </div>
       </div>
@@ -75,26 +87,26 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <div className="min-h-screen bg-background">
+      <Navbar />
       
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Profile</h1>
-          <p className="text-gray-600">Manage your account information</p>
+          <h1 className="text-4xl font-bold gradient-text mb-2">Profile</h1>
+          <p className="text-muted-foreground">Manage your account information</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           <div className="lg:col-span-1">
-            <Card>
+            <Card className="card-elevated">
               <CardContent className="pt-6">
                 <div className="text-center">
-                  <div className="w-24 h-24 bg-blue-500 text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
+                  <div className="w-24 h-24 bg-gradient-to-r from-primary to-secondary text-white rounded-full flex items-center justify-center text-3xl font-bold mx-auto mb-4">
                     {user.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <h2 className="text-xl font-bold text-gray-900">{user.name}</h2>
-                  <p className="text-gray-600">{user.email}</p>
-                  <div className="inline-block bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mt-2">
+                  <h2 className="text-xl font-bold">{user.name}</h2>
+                  <p className="text-muted-foreground">{user.email}</p>
+                  <div className="inline-block bg-primary/10 text-primary px-3 py-1 rounded-full text-sm font-medium mt-2">
                     {user.role}
                   </div>
                 </div>
@@ -103,7 +115,7 @@ const ProfilePage: React.FC = () => {
           </div>
 
           <div className="lg:col-span-2">
-            <Card>
+            <Card className="card-elevated">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Personal Information</CardTitle>
                 {!isEditing ? (
@@ -127,7 +139,7 @@ const ProfilePage: React.FC = () => {
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium mb-2">
                       <User className="h-4 w-4 inline mr-2" />
                       Full Name
                     </label>
@@ -139,12 +151,12 @@ const ProfilePage: React.FC = () => {
                         placeholder="Enter your full name"
                       />
                     ) : (
-                      <p className="text-gray-900">{user.name || 'Not provided'}</p>
+                      <p className="text-foreground">{user.name || 'Not provided'}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium mb-2">
                       <Mail className="h-4 w-4 inline mr-2" />
                       Email Address
                     </label>
@@ -157,12 +169,12 @@ const ProfilePage: React.FC = () => {
                         placeholder="Enter your email"
                       />
                     ) : (
-                      <p className="text-gray-900">{user.email || 'Not provided'}</p>
+                      <p className="text-foreground">{user.email || 'Not provided'}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium mb-2">
                       <Phone className="h-4 w-4 inline mr-2" />
                       Phone Number
                     </label>
@@ -174,12 +186,12 @@ const ProfilePage: React.FC = () => {
                         placeholder="Enter your phone number"
                       />
                     ) : (
-                      <p className="text-gray-900">{user.phone || 'Not provided'}</p>
+                      <p className="text-foreground">{user.phone || 'Not provided'}</p>
                     )}
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium mb-2">
                       <Calendar className="h-4 w-4 inline mr-2" />
                       Date of Birth
                     </label>
@@ -191,7 +203,7 @@ const ProfilePage: React.FC = () => {
                         onChange={handleInputChange}
                       />
                     ) : (
-                      <p className="text-gray-900">
+                      <p className="text-foreground">
                         {user.dateOfBirth ? new Date(user.dateOfBirth).toLocaleDateString() : 'Not provided'}
                       </p>
                     )}
@@ -199,15 +211,15 @@ const ProfilePage: React.FC = () => {
                 </div>
 
                 <div className="border-t pt-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">Account Information</h3>
+                  <h3 className="text-lg font-medium mb-4">Account Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">User ID</label>
-                      <p className="text-gray-900 font-mono text-sm">{user.userId}</p>
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">User ID</label>
+                      <p className="text-foreground font-mono text-sm">{user.userId}</p>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Account Type</label>
-                      <p className="text-gray-900">{user.role}</p>
+                      <label className="block text-sm font-medium text-muted-foreground mb-2">Account Type</label>
+                      <p className="text-foreground">{user.role}</p>
                     </div>
                   </div>
                 </div>
