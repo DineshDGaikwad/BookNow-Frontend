@@ -20,17 +20,14 @@ export const useRealTimeSeats = (showId: string | undefined) => {
     }
   }, [userId]);
 
-  // Load initial seat data and start real-time updates
+  // Load initial seat data only
   useEffect(() => {
     if (!showId) return;
 
     loadSeats();
-    startRealTimeUpdates();
 
     return () => {
-      stopRealTimeUpdates();
-      // Release user selections when component unmounts
-      customerAPI.releaseUserSelection(userId, showId).catch(console.error);
+      // Clean up on unmount
     };
   }, [showId]);
 
@@ -153,11 +150,15 @@ export const useRealTimeSeats = (showId: string | undefined) => {
     return seats.filter(seat => {
       const seatKey = seat.showSeatId || seat.seatId;
       return selectedSeats.includes(seatKey);
-    });
+    }).map(seat => ({
+      ...seat,
+      price: seat.seatPrice || seat.price || 0,
+      section: seat.seatType || seat.section || 'Regular'
+    }));
   };
 
   const getTotalPrice = (): number => {
-    return getSelectedSeatsData().reduce((sum, seat) => sum + seat.price, 0);
+    return getSelectedSeatsData().reduce((sum, seat) => sum + (seat.price || 0), 0);
   };
 
   return {

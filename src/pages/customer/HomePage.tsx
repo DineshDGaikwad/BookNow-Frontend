@@ -18,16 +18,25 @@ const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadFeaturedEvents();
-  }, []);
+    if (user) {
+      loadFeaturedEvents();
+    }
+  }, [user]);
 
   const loadFeaturedEvents = async () => {
     try {
       setLoading(true);
-      const events = await customerAPI.getEvents();
-      setFeaturedEvents(events.slice(0, 6));
+      const events = await customerAPI.getFeaturedEvents(6);
+      setFeaturedEvents(events);
     } catch (error) {
       console.error('Failed to load events:', error);
+      // Fallback to regular events
+      try {
+        const fallbackEvents = await customerAPI.getEvents({ limit: 6 });
+        setFeaturedEvents(fallbackEvents);
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError);
+      }
     } finally {
       setLoading(false);
     }

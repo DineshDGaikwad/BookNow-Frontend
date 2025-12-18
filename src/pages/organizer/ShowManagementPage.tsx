@@ -1,12 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams, Link } from 'react-router-dom';
+import { Plus, Trash2, Calendar, MapPin, Clock, Users } from 'lucide-react';
 import { RootState } from '../../store';
 import Header from '../../components/common/Header';
-import { showAPI, ShowResponse, CreateShowRequest } from '../../services/showAPI';
-import { venueAPI, VenueResponse } from '../../services/venueAPI';
+import { Button } from '../../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Badge } from '../../components/ui/badge';
+import { showAPI, ShowResponse, CreateShowWithSeatPricingRequest, SeatPricingRequest } from '../../services/showAPI';
+import { venueAPI, VenueResponse, VenueSeatsResponse, SeatConfiguration } from '../../services/venueAPI';
 import { organizerAPI, EventResponse } from '../../services/organizerAPI';
-import { toast } from 'react-toastify';
+
+interface SeatPricing {
+  seatType: string;
+  price: number;
+}
 
 const ShowManagementPage: React.FC = () => {
   const { eventId } = useParams<{ eventId: string }>();
@@ -16,15 +24,16 @@ const ShowManagementPage: React.FC = () => {
   const [venues, setVenues] = useState<VenueResponse[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [formData, setFormData] = useState<CreateShowRequest>({
+  const [venueSeats, setVenueSeats] = useState<VenueSeatsResponse | null>(null);
+  const [seatPricing, setSeatPricing] = useState<SeatPricing[]>([]);
+  const [formData, setFormData] = useState<CreateShowWithSeatPricingRequest>({
     eventId: eventId || '',
     venueId: '',
     showStartTime: '',
     showEndTime: '',
     showLanguage: '',
     showFormat: '',
-    showPriceMin: 0,
-    showPriceMax: 0
+    seatPricing: []
   });
 
   useEffect(() => {
@@ -34,6 +43,15 @@ const ShowManagementPage: React.FC = () => {
       setLoading(false);
     }
   }, [eventId, user?.userId]);
+
+  useEffect(() => {
+    if (formData.venueId && user?.userId) {
+      loadVenueSeats(formData.venueId);
+    } else {
+      setVenueSeats(null);
+      setSeatPricing([]);
+    }
+  }, [formData.venueId, user?.userId]);
 
   const loadData = async () => {
     try {
@@ -51,7 +69,6 @@ const ShowManagementPage: React.FC = () => {
       
     } catch (error) {
       console.error('Failed to load data:', error);
-      toast.error('Failed to load show data');
       setShows([]);
       setVenues([]);
     } finally {
@@ -59,17 +76,54 @@ const ShowManagementPage: React.FC = () => {
     }
   };
 
+  const loadVenueSeats = async (venueId: string) => {
+    try {
+      const userId = user?.userId || '';
+      const seatsData = await venueAPI.getVenueSeats(venueId, userId);
+      setVenueSeats(seatsData);
+      
+      // Initialize seat pricing with base prices
+      const initialPricing = seatsData.configurations.map((config) => ({
+        seatType: config.seatType,
+        price: config.basePrice
+      }));
+      setSeatPricing(initialPricing);
+      
+      // Update form data with seat pricing
+      setFormData(prev => ({
+        ...prev,
+        seatPricing: initialPricing
+      }));
+      
+    } catch (error) {
+      console.error('Failed to load venue seats:', error);
+      setVenueSeats(null);
+      setSeatPricing([]);
+    }
+  };
+
+  const handleSeatPriceChange = (seatType: string, price: number) => {
+    const updatedPricing = seatPricing.map(sp => 
+      sp.seatType === seatType ? { ...sp, price } : sp
+    );
+    
+    setSeatPricing(updatedPricing);
+    setFormData(prev => ({
+      ...prev,
+      seatPricing: updatedPricing
+    }));
+  };
+
   const handleCreateShow = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       const userId = user?.userId || '';
-      await showAPI.createShow(userId, formData);
-      toast.success('Show created successfully!');
+      await showAPI.createShowWithSeatPricing(userId, formData);
       resetForm();
       loadData();
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create show');
+      console.error('Failed to create show:', error);
     }
   };
 
@@ -82,9 +136,10 @@ const ShowManagementPage: React.FC = () => {
       showEndTime: '',
       showLanguage: '',
       showFormat: '',
-      showPriceMin: 0,
-      showPriceMax: 0
+      seatPricing: []
     });
+    setVenueSeats(null);
+    setSeatPricing([]);
   };
 
   const handleDeleteShow = async (showId: string) => {
@@ -92,24 +147,23 @@ const ShowManagementPage: React.FC = () => {
       try {
         const userId = user?.userId || '';
         await showAPI.deleteShow(showId, userId);
-        toast.success('Show deleted successfully');
         loadData();
       } catch (error) {
-        toast.error('Failed to delete show');
+        console.error('Failed to delete show:', error);
       }
     }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-900">
         <Header />
         <div className="max-w-7xl mx-auto px-4 py-8">
           <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-200 rounded w-1/3"></div>
+            <div className="h-8 bg-gray-700 rounded w-1/3"></div>
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+                <div key={i} className="h-32 bg-gray-700 rounded-xl"></div>
               ))}
             </div>
           </div>
@@ -119,93 +173,96 @@ const ShowManagementPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900">
       <Header />
       
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <Link to="/organizer/events" className="text-blue-500 hover:underline mb-2 block">← Back to Events</Link>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
+            <Link to="/organizer/events" className="text-purple-400 hover:underline mb-2 block">← Back to Events</Link>
+            <h1 className="text-3xl font-bold text-white mb-2">
               Shows for "{event?.eventTitle || 'Loading...'}"
             </h1>
-            <p className="text-gray-600">Manage performances for this event</p>
+            <p className="text-gray-400">Manage performances for this event</p>
           </div>
-          <button
+          <Button
             onClick={() => setShowCreateForm(true)}
-            className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-6 py-3 rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all"
+            className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white"
           >
+            <Plus className="h-4 w-4" />
             Create New Show
-          </button>
+          </Button>
         </div>
 
         {/* Create Show Form */}
         {showCreateForm && (
-          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-            <h2 className="text-xl font-bold mb-4">Create New Show</h2>
-            <form onSubmit={handleCreateShow} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Venue *</label>
-                  <select
-                    value={formData.venueId}
-                    onChange={(e) => setFormData({...formData, venueId: e.target.value})}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select venue</option>
-                    {venues.map(venue => (
-                      <option key={venue.venueId} value={venue.venueId}>
-                        {venue.venueName} - {venue.venueCity}
-                      </option>
-                    ))}
-                  </select>
+          <Card className="bg-gray-800 border-gray-700 mb-8">
+            <CardHeader>
+              <CardTitle className="text-white">Create New Show</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateShow} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Venue *</label>
+                    <select
+                      value={formData.venueId}
+                      onChange={(e) => setFormData({...formData, venueId: e.target.value})}
+                      required
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">Select venue</option>
+                      {venues.map(venue => (
+                        <option key={venue.venueId} value={venue.venueId}>
+                          {venue.venueName} - {venue.venueCity}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Language</label>
+                    <select
+                      value={formData.showLanguage}
+                      onChange={(e) => setFormData({...formData, showLanguage: e.target.value})}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
+                    >
+                      <option value="">Select language</option>
+                      <option value="English">English</option>
+                      <option value="Hindi">Hindi</option>
+                      <option value="Tamil">Tamil</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
-                  <select
-                    value={formData.showLanguage}
-                    onChange={(e) => setFormData({...formData, showLanguage: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select language</option>
-                    <option value="English">English</option>
-                    <option value="Hindi">Hindi</option>
-                    <option value="Tamil">Tamil</option>
-                  </select>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">Start Time *</label>
+                    <input
+                      type="datetime-local"
+                      value={formData.showStartTime}
+                      onChange={(e) => setFormData({...formData, showStartTime: e.target.value})}
+                      required
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">End Time *</label>
+                    <input
+                      type="datetime-local"
+                      value={formData.showEndTime}
+                      onChange={(e) => setFormData({...formData, showEndTime: e.target.value})}
+                      required
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
+                    />
+                  </div>
                 </div>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Time *</label>
-                  <input
-                    type="datetime-local"
-                    value={formData.showStartTime}
-                    onChange={(e) => setFormData({...formData, showStartTime: e.target.value})}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">End Time *</label>
-                  <input
-                    type="datetime-local"
-                    value={formData.showEndTime}
-                    onChange={(e) => setFormData({...formData, showEndTime: e.target.value})}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Format</label>
+                  <label className="block text-sm font-medium text-gray-300 mb-2">Format</label>
                   <select
                     value={formData.showFormat}
                     onChange={(e) => setFormData({...formData, showFormat: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="">Select format</option>
                     <option value="Live">Live Performance</option>
@@ -213,98 +270,136 @@ const ShowManagementPage: React.FC = () => {
                     <option value="3D">3D</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Min Price (₹)</label>
-                  <input
-                    type="number"
-                    value={formData.showPriceMin}
-                    onChange={(e) => setFormData({...formData, showPriceMin: Number(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Max Price (₹)</label>
-                  <input
-                    type="number"
-                    value={formData.showPriceMax}
-                    onChange={(e) => setFormData({...formData, showPriceMax: Number(e.target.value)})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-              </div>
 
-              <div className="flex space-x-4">
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
-                >
-                  Create Show
-                </button>
-              </div>
-            </form>
-          </div>
+                {/* Seat Pricing Section */}
+                {venueSeats && venueSeats.configurations && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-4">Seat Pricing</h3>
+                    <div className="space-y-4">
+                      {venueSeats.configurations.map((config) => {
+                        const currentPricing = seatPricing.find(sp => sp.seatType === config.seatType);
+                        return (
+                          <div key={config.seatType} className="bg-gray-700 rounded-lg p-4">
+                            <div className="flex items-center justify-between mb-3">
+                              <div>
+                                <h4 className="text-white font-medium">{config.seatType}</h4>
+                                <p className="text-gray-400 text-sm">{config.activeSeats} seats available</p>
+                              </div>
+                              <Badge variant="outline" className="border-gray-600 text-gray-300">
+                                ₹{config.basePrice} - ₹{config.maxPrice}
+                              </Badge>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-300 mb-2">
+                                Set Price (₹{config.basePrice} - ₹{config.maxPrice})
+                              </label>
+                              <input
+                                type="number"
+                                min={config.basePrice}
+                                max={config.maxPrice}
+                                value={currentPricing?.price || config.basePrice}
+                                onChange={(e) => handleSeatPriceChange(config.seatType, Number(e.target.value))}
+                                className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
+                              />
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex space-x-4">
+                  <Button
+                    type="button"
+                    onClick={resetForm}
+                    variant="outline"
+                    className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
+                    disabled={!formData.venueId || !venueSeats}
+                  >
+                    Create Show
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
         )}
 
         {/* Shows List */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold mb-4">Shows ({shows.length})</h2>
-          {shows.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-6xl mb-4">🎭</div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Shows Yet</h3>
-              <p className="text-gray-600 mb-6">Create your first show to start selling tickets</p>
-              <button
-                onClick={() => setShowCreateForm(true)}
-                className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600"
-              >
-                Create First Show
-              </button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {shows.map(show => (
-                <div key={show.showId} className="border border-gray-200 rounded-lg p-4">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900">{show.venueName}</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-600 mt-2">
-                        <div>
-                          <span className="font-medium">Start:</span><br />
-                          {new Date(show.showStartTime).toLocaleString()}
-                        </div>
-                        <div>
-                          <span className="font-medium">End:</span><br />
-                          {new Date(show.showEndTime).toLocaleString()}
-                        </div>
-                        <div>
-                          <span className="font-medium">Language:</span><br />
-                          {show.showLanguage || 'Not specified'}
-                        </div>
-                        <div>
-                          <span className="font-medium">Price:</span><br />
-                          ₹{show.showPriceMin} - ₹{show.showPriceMax}
+        <Card className="bg-gray-800 border-gray-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Shows ({shows.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {shows.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar className="h-12 w-12 text-gray-500 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-white mb-2">No Shows Yet</h3>
+                <p className="text-gray-400 mb-6">Create your first show to start selling tickets</p>
+                <Button
+                  onClick={() => setShowCreateForm(true)}
+                  className="bg-purple-600 hover:bg-purple-700 text-white"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create First Show
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {shows.map(show => (
+                  <div key={show.showId} className="border border-gray-700 rounded-lg p-4 hover:bg-gray-700/50 transition-colors">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-white mb-2">{show.venueName}</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-gray-400">
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <div>
+                              <span className="font-medium text-gray-300">Start:</span><br />
+                              {new Date(show.showStartTime).toLocaleString()}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            <div>
+                              <span className="font-medium text-gray-300">End:</span><br />
+                              {new Date(show.showEndTime).toLocaleString()}
+                            </div>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-300">Language:</span><br />
+                            {show.showLanguage || 'Not specified'}
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-300">Price:</span><br />
+                            ₹{show.showPriceMin} - ₹{show.showPriceMax}
+                          </div>
                         </div>
                       </div>
+                      <Button
+                        onClick={() => handleDeleteShow(show.showId)}
+                        variant="destructive"
+                        size="sm"
+                        className="ml-4"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <button
-                      onClick={() => handleDeleteShow(show.showId)}
-                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm ml-4"
-                    >
-                      Delete
-                    </button>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

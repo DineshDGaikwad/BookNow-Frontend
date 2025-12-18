@@ -42,9 +42,29 @@ export interface UpdatePricingRequest {
   showPriceMax?: number;
 }
 
+export interface SeatPricingRequest {
+  seatType: string;
+  price: number;
+}
+
+export interface CreateShowWithSeatPricingRequest {
+  eventId: string;
+  venueId: string;
+  showStartTime: string;
+  showEndTime: string;
+  showLanguage?: string;
+  showFormat?: string;
+  seatPricing: SeatPricingRequest[];
+}
+
 export const showAPI = {
   createShow: async (organizerId: string, data: CreateShowRequest): Promise<ShowResponse> => {
     const response = await api.post(`/organizer/shows?organizerId=${organizerId}`, data);
+    return response.data;
+  },
+
+  createShowWithSeatPricing: async (organizerId: string, data: CreateShowWithSeatPricingRequest): Promise<ShowResponse> => {
+    const response = await api.post(`/organizer/shows/with-seat-pricing?organizerId=${organizerId}`, data);
     return response.data;
   },
 
