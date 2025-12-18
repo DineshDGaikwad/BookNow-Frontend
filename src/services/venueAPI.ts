@@ -46,6 +46,13 @@ export interface VenueSeatsResponse {
   configurations: SeatConfiguration[];
 }
 
+export interface VenueSeatConstraint {
+  seatType: string;
+  minPrice: number;
+  maxPrice: number;
+  totalSeats: number;
+}
+
 export interface CreateVenueWithSeatsRequest {
   VenueName: string;
   VenueAddress?: string;
@@ -122,6 +129,11 @@ export const venueAPI = {
 
   toggleVenueStatus: async (venueId: string, organizerId: string): Promise<{ message: string }> => {
     const response = await api.patch(`/organizer/venues/${venueId}/toggle-status?organizerId=${organizerId}`);
+    return response.data;
+  },
+
+  getVenueSeatConfigurations: async (venueId: string): Promise<VenueSeatConstraint[]> => {
+    const response = await api.get(`/organizer/shows/venue/${venueId}/seat-configurations`);
     return response.data;
   }
 };

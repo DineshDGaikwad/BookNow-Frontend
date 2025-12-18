@@ -8,7 +8,7 @@ import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { showAPI, ShowResponse, CreateShowWithSeatPricingRequest, SeatPricingRequest } from '../../services/showAPI';
-import { venueAPI, VenueResponse, VenueSeatsResponse, SeatConfiguration } from '../../services/venueAPI';
+import { venueAPI, VenueResponse, VenueSeatConstraint } from '../../services/venueAPI';
 import { organizerAPI, EventResponse } from '../../services/organizerAPI';
 
 interface SeatPricing {
@@ -24,7 +24,7 @@ const ShowManagementPage: React.FC = () => {
   const [venues, setVenues] = useState<VenueResponse[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [venueSeats, setVenueSeats] = useState<VenueSeatsResponse | null>(null);
+  const [seatConfigurations, setSeatConfigurations] = useState<VenueSeatConstraint[]>([]);
   const [seatPricing, setSeatPricing] = useState<SeatPricing[]>([]);
   const [formData, setFormData] = useState<CreateShowWithSeatPricingRequest>({
     eventId: eventId || '',
@@ -46,9 +46,9 @@ const ShowManagementPage: React.FC = () => {
 
   useEffect(() => {
     if (formData.venueId && user?.userId) {
-      loadVenueSeats(formData.venueId);
+      loadVenueSeatConfigurations(formData.venueId);
     } else {
-      setVenueSeats(null);
+      setSeatConfigurations([]);
       setSeatPricing([]);
     }
   }, [formData.venueId, user?.userId]);
@@ -76,16 +76,15 @@ const ShowManagementPage: React.FC = () => {
     }
   };
 
-  const loadVenueSeats = async (venueId: string) => {
+  const loadVenueSeatConfigurations = async (venueId: string) => {
     try {
-      const userId = user?.userId || '';
-      const seatsData = await venueAPI.getVenueSeats(venueId, userId);
-      setVenueSeats(seatsData);
+      const configurations = await venueAPI.getVenueSeatConfigurations(venueId);
+      setSeatConfigurations(configurations);
       
       // Initialize seat pricing with base prices
-      const initialPricing = seatsData.configurations.map((config) => ({
+      const initialPricing = configurations.map((config) => ({
         seatType: config.seatType,
-        price: config.basePrice
+        price: config.minPrice
       }));
       setSeatPricing(initialPricing);
       
@@ -96,8 +95,8 @@ const ShowManagementPage: React.FC = () => {
       }));
       
     } catch (error) {
-      console.error('Failed to load venue seats:', error);
-      setVenueSeats(null);
+      console.error('Failed to load venue seat configurations:', error);
+      setSeatConfigurations([]);
       setSeatPricing([]);
     }
   };
@@ -138,7 +137,7 @@ const ShowManagementPage: React.FC = () => {
       showFormat: '',
       seatPricing: []
     });
-    setVenueSeats(null);
+    setSeatConfigurations([]);
     setSeatPricing([]);
   };
 
@@ -272,32 +271,32 @@ const ShowManagementPage: React.FC = () => {
                 </div>
 
                 {/* Seat Pricing Section */}
-                {venueSeats && venueSeats.configurations && (
+                {seatConfigurations.length > 0 && (
                   <div>
                     <h3 className="text-lg font-semibold text-white mb-4">Seat Pricing</h3>
                     <div className="space-y-4">
-                      {venueSeats.configurations.map((config) => {
+                      {seatConfigurations.map((config) => {
                         const currentPricing = seatPricing.find(sp => sp.seatType === config.seatType);
                         return (
                           <div key={config.seatType} className="bg-gray-700 rounded-lg p-4">
                             <div className="flex items-center justify-between mb-3">
                               <div>
                                 <h4 className="text-white font-medium">{config.seatType}</h4>
-                                <p className="text-gray-400 text-sm">{config.activeSeats} seats available</p>
+                                <p className="text-gray-400 text-sm">{config.totalSeats} seats available</p>
                               </div>
                               <Badge variant="outline" className="border-gray-600 text-gray-300">
-                                ₹{config.basePrice} - ₹{config.maxPrice}
+                                ₹{config.minPrice} - ₹{config.maxPrice}
                               </Badge>
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Set Price (₹{config.basePrice} - ₹{config.maxPrice})
+                                Set Price (₹{config.minPrice} - ₹{config.maxPrice})
                               </label>
                               <input
                                 type="number"
-                                min={config.basePrice}
+                                min={config.minPrice}
                                 max={config.maxPrice}
-                                value={currentPricing?.price || config.basePrice}
+                                value={currentPricing?.price || config.minPrice}
                                 onChange={(e) => handleSeatPriceChange(config.seatType, Number(e.target.value))}
                                 className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
                               />
@@ -321,7 +320,7 @@ const ShowManagementPage: React.FC = () => {
                   <Button
                     type="submit"
                     className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-                    disabled={!formData.venueId || !venueSeats}
+                    disabled={!formData.venueId || seatConfigurations.length === 0}
                   >
                     Create Show
                   </Button>

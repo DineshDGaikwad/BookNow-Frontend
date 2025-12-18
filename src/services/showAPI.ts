@@ -64,7 +64,7 @@ export const showAPI = {
   },
 
   createShowWithSeatPricing: async (organizerId: string, data: CreateShowWithSeatPricingRequest): Promise<ShowResponse> => {
-    const response = await api.post(`/organizer/shows/with-seat-pricing?organizerId=${organizerId}`, data);
+    const response = await api.post(`/organizer/shows?organizerId=${organizerId}`, data);
     return response.data;
   },
 
