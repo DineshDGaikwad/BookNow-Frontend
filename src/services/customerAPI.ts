@@ -93,12 +93,12 @@ export const customerAPI = {
     if (params?.limit) searchParams.append('limit', params.limit.toString());
     
     const response = await api.get(`/customer/events?${searchParams}`);
-    return response.data;
+    return response.data.events || response.data.Events || response.data;
   },
 
   getFeaturedEvents: async (limit: number = 6): Promise<CustomerEvent[]> => {
     const response = await api.get(`/customer/events?limit=${limit}&featured=true`);
-    return response.data;
+    return response.data.events || response.data.Events || response.data;
   },
 
   getEventDetails: async (eventId: string, includeReviews = false): Promise<CustomerEvent> => {

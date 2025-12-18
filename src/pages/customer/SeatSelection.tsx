@@ -230,25 +230,25 @@ export function SeatSelection() {
                     style={{ transform: `scale(${zoom})`, transformOrigin: 'top center' }}
                   >
                     <div className="space-y-2 min-w-max">
-                      {(seats.length > 0 ? Array.from(new Set(seats.map(s => s.row))).sort() : ['A', 'B', 'C']).map((row, idx) => (
+                      {(seats?.length > 0 ? Array.from(new Set(seats.map(s => s.row || s.seatRowNumber || 'A'))).sort() : ['A', 'B', 'C']).map((row, idx) => (
                         <div key={`row-${row}-${idx}`} className="flex items-center justify-center space-x-1">
                           <div className="w-6 text-center text-sm font-medium text-muted-foreground">
                             {row}
                           </div>
                           
                           <div className="flex space-x-1">
-                            {seats
-                              .filter(seat => seat.row === row)
-                              .sort((a, b) => parseInt(a.seatNumber.replace(/\D/g, '')) - parseInt(b.seatNumber.replace(/\D/g, '')))
+                            {(seats || [])
+                              .filter(seat => (seat.row || seat.seatRowNumber) === row)
+                              .sort((a, b) => parseInt((a.seatNumber || '0').replace(/\D/g, '')) - parseInt((b.seatNumber || '0').replace(/\D/g, '')))
                               .map(seat => (
                                 <button
                                   key={seat.seatId}
                                   onClick={() => toggleSeat(seat.seatId)}
                                   disabled={seat.status === 'Booked' || seat.status === 'Locked'}
                                   className={getSeatClassName(seat)}
-                                  title={`${seat.seatNumber} - ${seat.section || 'Standard'} - ₹${seat.seatPrice || 0}`}
+                                  title={`${seat.seatNumber || 'N/A'} - ${seat.seatType || 'Standard'} - ₹${seat.seatPrice || seat.price || 0}`}
                                 >
-                                  {seat.seatNumber.replace(/\D/g, '')}
+                                  {(seat.seatNumber || '0').replace(/\D/g, '') || '?'}
                                 </button>
                               ))
                             }

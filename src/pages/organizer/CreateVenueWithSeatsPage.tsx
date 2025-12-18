@@ -39,37 +39,73 @@ const CreateVenueWithSeatsPage: React.FC = () => {
     e.preventDefault();
     if (!user?.userId) return;
 
+    // Validate form data
+    if (!formData.venueName.trim()) {
+      toast.error('Venue name is required');
+      return;
+    }
+
+    if (!formData.venueType) {
+      toast.error('Venue type is required');
+      return;
+    }
+
+    if (seatConfigs.length === 0) {
+      toast.error('At least one seat configuration is required');
+      return;
+    }
+
+    // Validate seat configurations
+    for (const config of seatConfigs) {
+      if (!config.seatType.trim()) {
+        toast.error('Seat type is required for all configurations');
+        return;
+      }
+      if (!config.rowPrefix.trim()) {
+        toast.error('Row prefix is required for all configurations');
+        return;
+      }
+      if (config.rowsCount <= 0 || config.seatsPerRow <= 0) {
+        toast.error('Rows count and seats per row must be greater than 0');
+        return;
+      }
+      if (config.basePrice <= 0 || config.maxPrice <= 0) {
+        toast.error('Base price and max price must be greater than 0');
+        return;
+      }
+      if (config.basePrice > config.maxPrice) {
+        toast.error('Base price cannot be greater than max price');
+        return;
+      }
+    }
+
     setSaving(true);
     try {
-      // Calculate total capacity
-      const totalCapacity = seatConfigs.reduce((sum, config) => 
-        sum + (config.rowsCount * config.seatsPerRow), 0
-      );
-
-      // Create venue with seat configurations
-      await venueAPI.createVenueWithSeats(user.userId, {
-        VenueName: formData.venueName,
-        VenueAddress: formData.venueAddress,
-        VenueCity: formData.venueCity,
-        VenueState: formData.venueState,
-        VenueZipcode: formData.venueZipcode,
-        VenueContactInfo: formData.venueContactInfo,
+      const requestData = {
+        VenueName: formData.venueName.trim(),
+        VenueAddress: formData.venueAddress?.trim() || undefined,
+        VenueCity: formData.venueCity?.trim() || undefined,
+        VenueState: formData.venueState?.trim() || undefined,
+        VenueZipcode: formData.venueZipcode?.trim() || undefined,
+        VenueContactInfo: formData.venueContactInfo?.trim() || undefined,
         VenueType: formData.venueType,
         SeatConfigurations: seatConfigs.map(config => ({
-          SeatType: config.seatType,
-          RowsCount: config.rowsCount,
-          SeatsPerRow: config.seatsPerRow,
-          RowPrefix: config.rowPrefix,
-          BasePrice: config.basePrice,
-          MaxPrice: config.maxPrice
+          SeatType: config.seatType.trim(),
+          RowsCount: Math.floor(config.rowsCount),
+          SeatsPerRow: Math.floor(config.seatsPerRow),
+          RowPrefix: config.rowPrefix.trim().toUpperCase(),
+          BasePrice: parseFloat(config.basePrice.toString()),
+          MaxPrice: parseFloat(config.maxPrice.toString())
         }))
-      });
+      };
+
+      await venueAPI.createVenueWithSeats(user.userId, requestData);
       
       toast.success('Venue created successfully with seat layout!');
       navigate('/organizer/venues');
     } catch (error: any) {
-      console.error('Failed to create venue:', error);
-      toast.error(error.response?.data?.message || 'Failed to create venue');
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || 'Failed to create venue';
+      toast.error(errorMessage);
     } finally {
       setSaving(false);
     }

@@ -113,7 +113,7 @@ export function Events() {
       if (selectedCity !== 'All Cities') params.city = selectedCity
       
       const data = await customerAPI.getEvents(params)
-      setEvents(data || [])
+      setEvents(Array.isArray(data) ? data : [])
     } catch (err: any) {
       console.error('Failed to load events:', err)
       setError(err?.response?.data?.message || 'Failed to load events. Please try again.')
@@ -332,7 +332,7 @@ export function Events() {
               <p className="text-destructive">{error}</p>
               <Button onClick={fetchEvents} className="mt-4">Try Again</Button>
             </div>
-          ) : events.length === 0 ? (
+          ) : !Array.isArray(events) || events.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <p className="text-muted-foreground">No events found</p>
             </div>

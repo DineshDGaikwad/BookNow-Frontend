@@ -9,8 +9,6 @@ export interface CreateVenueRequest {
   venueCapacity: number;
   venueType?: string;
   venueContactInfo?: string;
-  defaultPriceMin?: number;
-  defaultPriceMax?: number;
 }
 
 export interface VenueResponse {
@@ -23,8 +21,6 @@ export interface VenueResponse {
   venueCapacity: number;
   venueType?: string;
   venueContactInfo?: string;
-  defaultPriceMin?: number;
-  defaultPriceMax?: number;
   organizerId: string;
   venueStatus: number;
   isActive: boolean;
@@ -134,6 +130,17 @@ export const venueAPI = {
 
   getVenueSeatConfigurations: async (venueId: string): Promise<VenueSeatConstraint[]> => {
     const response = await api.get(`/organizer/shows/venue/${venueId}/seat-configurations`);
+    return response.data;
+  },
+
+  updateSeatLayout: async (venueId: string, organizerId: string, data: {
+    seatType: string;
+    rowsCount: number;
+    seatsPerRow: number;
+    basePrice: number;
+    maxPrice: number;
+  }): Promise<VenueSeatsResponse> => {
+    const response = await api.put(`/organizer/venues/${venueId}/seat-layout?organizerId=${organizerId}`, data);
     return response.data;
   }
 };

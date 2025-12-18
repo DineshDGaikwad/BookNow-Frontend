@@ -2,14 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { useParams, Link } from 'react-router-dom';
 import { Plus, Trash2, Calendar, MapPin, Clock, Users } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { RootState } from '../../store';
 import Header from '../../components/common/Header';
 import { Button } from '../../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { showAPI, ShowResponse, CreateShowWithSeatPricingRequest, SeatPricingRequest } from '../../services/showAPI';
-import { venueAPI, VenueResponse, VenueSeatConstraint } from '../../services/venueAPI';
+import { venueAPI, VenueResponse } from '../../services/venueAPI';
 import { organizerAPI, EventResponse } from '../../services/organizerAPI';
+import { seatConfigAPI, VenueSeatConfiguration } from '../../services/seatConfigAPI';
 
 interface SeatPricing {
   seatType: string;
@@ -24,7 +26,7 @@ const ShowManagementPage: React.FC = () => {
   const [venues, setVenues] = useState<VenueResponse[]>([]);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [seatConfigurations, setSeatConfigurations] = useState<VenueSeatConstraint[]>([]);
+  const [seatConfigurations, setSeatConfigurations] = useState<VenueSeatConfiguration[]>([]);
   const [seatPricing, setSeatPricing] = useState<SeatPricing[]>([]);
   const [formData, setFormData] = useState<CreateShowWithSeatPricingRequest>({
     eventId: eventId || '',
@@ -78,7 +80,18 @@ const ShowManagementPage: React.FC = () => {
 
   const loadVenueSeatConfigurations = async (venueId: string) => {
     try {
-      const configurations = await venueAPI.getVenueSeatConfigurations(venueId);
+      console.log('Loading seat configurations for venue:', venueId);
+      const configurations = await seatConfigAPI.getVenueSeatConfigurations(venueId);
+      console.log('Received configurations:', configurations);
+      
+      if (!configurations || configurations.length === 0) {
+        console.warn('No seat configurations found for venue:', venueId);
+        toast.error('This venue has no seat configurations. Please contact admin to set up seat types and pricing.');
+        setSeatConfigurations([]);
+        setSeatPricing([]);
+        return;
+      }
+      
       setSeatConfigurations(configurations);
       
       // Initialize seat pricing with base prices
@@ -96,6 +109,7 @@ const ShowManagementPage: React.FC = () => {
       
     } catch (error) {
       console.error('Failed to load venue seat configurations:', error);
+      toast.error('Failed to load venue seat configurations. Please try again.');
       setSeatConfigurations([]);
       setSeatPricing([]);
     }
@@ -116,13 +130,30 @@ const ShowManagementPage: React.FC = () => {
   const handleCreateShow = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate that all seat types have pricing
+    if (seatConfigurations.length > 0 && seatPricing.length !== seatConfigurations.length) {
+      toast.error('Please set pricing for all seat types');
+      return;
+    }
+
+    // Validate pricing is within allowed range
+    for (const pricing of seatPricing) {
+      const config = seatConfigurations.find(c => c.seatType === pricing.seatType);
+      if (config && (pricing.price < config.minPrice || pricing.price > config.maxPrice)) {
+        toast.error(`Price for ${pricing.seatType} must be between ₹${config.minPrice} and ₹${config.maxPrice}`);
+        return;
+      }
+    }
+    
     try {
       const userId = user?.userId || '';
       await showAPI.createShowWithSeatPricing(userId, formData);
+      toast.success('Show created successfully!');
       resetForm();
       loadData();
     } catch (error: any) {
       console.error('Failed to create show:', error);
+      toast.error(error.response?.data?.error || 'Failed to create show');
     }
   };
 
@@ -150,6 +181,60 @@ const ShowManagementPage: React.FC = () => {
       } catch (error) {
         console.error('Failed to delete show:', error);
       }
+    }
+  };
+
+  const handleQuickSetup = async (venueId: string) => {
+    if (!venueId || !user?.userId) return;
+    
+    try {
+      // Basic seat configuration for quick setup
+      const basicConfigs = [
+        {
+          seatType: 'Regular',
+          rowsCount: 10,
+          seatsPerRow: 10,
+          rowPrefix: 'R',
+          basePrice: 299,
+          maxPrice: 599
+        },
+        {
+          seatType: 'Premium',
+          rowsCount: 5,
+          seatsPerRow: 10,
+          rowPrefix: 'P',
+          basePrice: 599,
+          maxPrice: 999
+        },
+        {
+          seatType: 'VIP',
+          rowsCount: 2,
+          seatsPerRow: 10,
+          rowPrefix: 'V',
+          basePrice: 999,
+          maxPrice: 1499
+        }
+      ];
+      
+      const response = await fetch(`/api/organizer/venues/${venueId}/seat-configurations?organizerId=${user.userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(basicConfigs)
+      });
+      
+      if (response.ok) {
+        toast.success('Seat configurations added successfully!');
+        // Reload seat configurations
+        await loadVenueSeatConfigurations(venueId);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to add seat configurations');
+      }
+    } catch (error) {
+      console.error('Failed to add seat configurations:', error);
+      toast.error('Failed to add seat configurations. Please try again.');
     }
   };
 
@@ -211,11 +296,13 @@ const ShowManagementPage: React.FC = () => {
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
                     >
                       <option value="">Select venue</option>
-                      {venues.map(venue => (
-                        <option key={venue.venueId} value={venue.venueId}>
-                          {venue.venueName} - {venue.venueCity}
-                        </option>
-                      ))}
+                      {venues.map(venue => {
+                        return (
+                          <option key={venue.venueId} value={venue.venueId}>
+                            {venue.venueName} - {venue.venueCity}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                   <div>
@@ -271,40 +358,71 @@ const ShowManagementPage: React.FC = () => {
                 </div>
 
                 {/* Seat Pricing Section */}
-                {seatConfigurations.length > 0 && (
+                {formData.venueId && (
                   <div>
-                    <h3 className="text-lg font-semibold text-white mb-4">Seat Pricing</h3>
-                    <div className="space-y-4">
-                      {seatConfigurations.map((config) => {
-                        const currentPricing = seatPricing.find(sp => sp.seatType === config.seatType);
-                        return (
-                          <div key={config.seatType} className="bg-gray-700 rounded-lg p-4">
-                            <div className="flex items-center justify-between mb-3">
-                              <div>
-                                <h4 className="text-white font-medium">{config.seatType}</h4>
-                                <p className="text-gray-400 text-sm">{config.totalSeats} seats available</p>
+                    {seatConfigurations.length > 0 ? (
+                      <div>
+                        <h3 className="text-lg font-semibold text-white mb-4">Seat Pricing Configuration</h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {seatConfigurations.map((config) => {
+                            const currentPricing = seatPricing.find(sp => sp.seatType === config.seatType);
+                            return (
+                              <div key={config.seatType} className="bg-gray-700 rounded-lg p-4 border border-gray-600">
+                                <div className="flex items-center justify-between mb-3">
+                                  <div>
+                                    <h4 className="text-white font-semibold text-lg">{config.seatType}</h4>
+                                    <p className="text-gray-300 text-sm font-medium">{config.totalSeats} seats available</p>
+                                  </div>
+                                  <Badge 
+                                    variant={config.seatType === 'VIP' ? 'default' : config.seatType === 'Premium' ? 'secondary' : 'outline'}
+                                    className="px-3 py-1"
+                                  >
+                                    Base: ₹{config.minPrice} | Max: ₹{config.maxPrice}
+                                  </Badge>
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-200 mb-2">
+                                    Set Show Price
+                                    <span className="text-xs text-gray-400 block">
+                                      Range: ₹{config.minPrice} - ₹{config.maxPrice}
+                                    </span>
+                                  </label>
+                                  <input
+                                    type="number"
+                                    min={config.minPrice}
+                                    max={config.maxPrice}
+                                    step="1"
+                                    value={currentPricing?.price || config.minPrice}
+                                    onChange={(e) => handleSeatPriceChange(config.seatType, Number(e.target.value))}
+                                    className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                                    placeholder={`₹${config.minPrice}`}
+                                  />
+                                </div>
                               </div>
-                              <Badge variant="outline" className="border-gray-600 text-gray-300">
-                                ₹{config.minPrice} - ₹{config.maxPrice}
-                              </Badge>
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-300 mb-2">
-                                Set Price (₹{config.minPrice} - ₹{config.maxPrice})
-                              </label>
-                              <input
-                                type="number"
-                                min={config.minPrice}
-                                max={config.maxPrice}
-                                value={currentPricing?.price || config.minPrice}
-                                onChange={(e) => handleSeatPriceChange(config.seatType, Number(e.target.value))}
-                                className="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg text-white focus:ring-2 focus:ring-purple-500"
-                              />
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="bg-yellow-900/20 border border-yellow-600 rounded-lg p-4">
+                        <div className="flex items-center gap-2 text-yellow-400 mb-2">
+                          <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          <h4 className="font-semibold">No Seat Configuration Found</h4>
+                        </div>
+                        <p className="text-yellow-300 text-sm mb-4">
+                          This venue doesn't have seat types configured yet. You can quickly set up basic seat configurations now.
+                        </p>
+                        <Button
+                          type="button"
+                          onClick={() => handleQuickSetup(formData.venueId)}
+                          className="bg-yellow-600 hover:bg-yellow-700 text-white text-sm px-4 py-2"
+                        >
+                          Quick Setup: Add Basic Seat Types
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -319,10 +437,10 @@ const ShowManagementPage: React.FC = () => {
                   </Button>
                   <Button
                     type="submit"
-                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white"
-                    disabled={!formData.venueId || seatConfigurations.length === 0}
+                    className="flex-1 bg-purple-600 hover:bg-purple-700 text-white disabled:bg-gray-600 disabled:cursor-not-allowed"
+                    disabled={!formData.venueId || seatConfigurations.length === 0 || !formData.showStartTime || !formData.showEndTime}
                   >
-                    Create Show
+                    {seatConfigurations.length === 0 && formData.venueId ? 'Venue Setup Required' : 'Create Show'}
                   </Button>
                 </div>
               </form>
@@ -379,8 +497,12 @@ const ShowManagementPage: React.FC = () => {
                             {show.showLanguage || 'Not specified'}
                           </div>
                           <div>
-                            <span className="font-medium text-gray-300">Price:</span><br />
-                            ₹{show.showPriceMin} - ₹{show.showPriceMax}
+                            <span className="font-medium text-gray-300">Price Range:</span><br />
+                            {show.seatPricing && show.seatPricing.length > 0 ? (
+                              `₹${Math.min(...show.seatPricing.map(sp => sp.showPrice))} - ₹${Math.max(...show.seatPricing.map(sp => sp.showPrice))}`
+                            ) : (
+                              'Pricing not set'
+                            )}
                           </div>
                         </div>
                       </div>
