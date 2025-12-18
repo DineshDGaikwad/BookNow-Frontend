@@ -12,72 +12,6 @@ import { Search, Filter, Grid, List, X, SlidersHorizontal } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { customerAPI, CustomerEvent } from '../../services/customerAPI'
 
-const mockEvents = [
-  {
-    id: '1',
-    title: 'Taylor Swift | The Eras Tour',
-    category: 'Concert',
-    image: '/api/placeholder/400/300',
-    date: 'Dec 15, 2024',
-    time: '7:00 PM',
-    venue: 'Madison Square Garden',
-    location: 'New York, NY',
-    price: 199,
-    rating: 4.9,
-    reviews: 2847,
-    duration: '3h 15m',
-    ageRating: 'All Ages',
-    availability: 'filling-fast' as const
-  },
-  {
-    id: '2',
-    title: 'NBA Finals 2024',
-    category: 'Sports',
-    image: '/api/placeholder/400/300',
-    date: 'Dec 22, 2024',
-    time: '8:00 PM',
-    venue: 'Crypto.com Arena',
-    location: 'Los Angeles, CA',
-    price: 420,
-    rating: 4.8,
-    reviews: 1523,
-    duration: '3h',
-    availability: 'available' as const
-  },
-  {
-    id: '3',
-    title: 'Avengers: Secret Wars',
-    category: 'Movie',
-    image: '/api/placeholder/400/300',
-    date: 'Dec 18, 2024',
-    time: '9:30 PM',
-    venue: 'AMC Empire 25',
-    location: 'New York, NY',
-    price: 25,
-    rating: 4.7,
-    reviews: 892,
-    duration: '2h 45m',
-    ageRating: 'PG-13',
-    availability: 'available' as const
-  },
-  {
-    id: '4',
-    title: 'Dave Chappelle Live',
-    category: 'Comedy',
-    image: '/api/placeholder/400/300',
-    date: 'Dec 20, 2024',
-    time: '10:00 PM',
-    venue: 'Comedy Cellar',
-    location: 'New York, NY',
-    price: 85,
-    rating: 4.9,
-    reviews: 456,
-    duration: '1h 30m',
-    ageRating: '18+',
-    availability: 'sold-out' as const
-  }
-]
-
 const categories = ['All', 'Concert', 'Sports', 'Movie', 'Comedy', 'Theater', 'Gaming']
 const cities = ['All Cities', 'New York', 'Los Angeles', 'Chicago', 'Miami', 'Las Vegas']
 const sortOptions = ['Relevance', 'Date', 'Price: Low to High', 'Price: High to Low', 'Rating']
@@ -116,11 +50,14 @@ export function Events() {
       if (selectedCategory !== 'All') params.category = selectedCategory
       if (selectedCity !== 'All Cities') params.city = selectedCity
       
+      console.log('Fetching events with params:', params)
       const data = await customerAPI.getEvents(params)
+      console.log('Received events data:', data)
       setEvents(Array.isArray(data) ? data : [])
     } catch (err: any) {
       console.error('Failed to load events:', err)
-      setError('Failed to load events. Please try again.')
+      const errorMessage = err.message || err.response?.data?.message || 'Failed to load events. Please try again.'
+      setError(errorMessage)
       setEvents([])
     } finally {
       setLoading(false)
@@ -333,12 +270,26 @@ export function Events() {
             </div>
           ) : error ? (
             <div className="col-span-full text-center py-12">
-              <p className="text-destructive">{error}</p>
+              <p className="text-destructive mb-4">{error}</p>
+              {error.includes('Backend server') && (
+                <div className="text-sm text-muted-foreground mb-4">
+                  <p>Make sure the backend server is running:</p>
+                  <code className="bg-muted px-2 py-1 rounded">cd Booknow && dotnet run</code>
+                </div>
+              )}
               <Button onClick={fetchEvents} className="mt-4">Try Again</Button>
             </div>
           ) : !Array.isArray(events) || events.length === 0 ? (
             <div className="col-span-full text-center py-12">
-              <p className="text-muted-foreground">No events found</p>
+              <p className="text-muted-foreground">No events found. Try adjusting your search criteria.</p>
+              <Button onClick={() => {
+                setSearchQuery('');
+                setSelectedCategory('All');
+                setSelectedCity('All Cities');
+                fetchEvents();
+              }} className="mt-4" variant="outline">
+                Clear Filters
+              </Button>
             </div>
           ) : (
             events.map(event => (
@@ -350,9 +301,9 @@ export function Events() {
                   category: event.eventCategory,
                   image: event.posterUrl || '/api/placeholder/400/300',
                   date: event.nextShowDate ? new Date(event.nextShowDate).toLocaleDateString('en-IN') : 'TBD',
-                  time: event.nextShowDate ? new Date(event.nextShowDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '',
+                  time: event.nextShowDate ? new Date(event.nextShowDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'TBD',
                   venue: event.venueName || 'TBD',
-                  location: event.venueCity || '',
+                  location: event.venueCity || 'TBD',
                   price: event.priceMin || 0,
                   rating: event.averageRating || 0,
                   reviews: event.reviewCount || 0,

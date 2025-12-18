@@ -18,10 +18,8 @@ const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      loadFeaturedEvents();
-    }
-  }, [user]);
+    loadFeaturedEvents();
+  }, []);
 
   const loadFeaturedEvents = async () => {
     try {
@@ -128,6 +126,46 @@ const HomePage: React.FC = () => {
             </div>
           </div>
         </section>
+
+        {/* Featured Events Section for Public Users */}
+        {featuredEvents.length > 0 && (
+          <section className="py-20 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-12">
+                <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Events</h2>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  Discover amazing events happening near you. Join thousands of others for unforgettable experiences.
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                {featuredEvents.slice(0, 6).map((event, index) => (
+                  <div key={event.eventId} className="animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
+                    <EventCard
+                      id={event.eventId}
+                      title={event.eventTitle}
+                      image={event.posterUrl}
+                      category={event.eventCategory}
+                      genre={event.eventGenre}
+                      venue={event.venueName || 'TBA'}
+                      city={event.venueCity}
+                      date={event.nextShowDate ? new Date(event.nextShowDate).toLocaleDateString() : 'TBA'}
+                      price={event.priceMin ? `₹${event.priceMin}` : 'TBA'}
+                      rating={event.averageRating}
+                      featured={index < 2}
+                    />
+                  </div>
+                ))}
+              </div>
+              
+              <div className="text-center mt-12">
+                <Link to="/events" className="inline-flex items-center px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                  View All Events →
+                </Link>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
     );
   }

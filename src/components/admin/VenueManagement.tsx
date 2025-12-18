@@ -96,13 +96,20 @@ const VenueManagement: React.FC = () => {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: number) => {
+    const statusMap = { 0: 'Pending', 1: 'Approved', 2: 'Rejected' };
+    const statusText = statusMap[status as keyof typeof statusMap] || 'Unknown';
     const colors = {
       'Pending': 'bg-yellow-100 text-yellow-800',
       'Approved': 'bg-green-100 text-green-800',
       'Rejected': 'bg-red-100 text-red-800'
     };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+    return colors[statusText as keyof typeof colors] || 'bg-gray-100 text-gray-800';
+  };
+
+  const getStatusText = (status: number) => {
+    const statusMap = { 0: 'Pending', 1: 'Approved', 2: 'Rejected' };
+    return statusMap[status as keyof typeof statusMap] || 'Unknown';
   };
 
   return (
@@ -153,7 +160,7 @@ const VenueManagement: React.FC = () => {
                       <p className="text-gray-600">{venue.venueAddress}, {venue.venueCity}, {venue.venueState}</p>
                       <p className="text-sm text-gray-500">Capacity: {venue.venueCapacity}</p>
                       <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-2 ${getStatusBadge(venue.venueStatus)}`}>
-                        {venue.venueStatus}
+                        {getStatusText(venue.venueStatus)}
                       </span>
                     </div>
                     <div className="flex space-x-2">
