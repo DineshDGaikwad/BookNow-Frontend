@@ -1,111 +1,131 @@
-import React, { useEffect, useState } from 'react';
-
-interface ApprovalRequest {
-  id: string;
-  type: string;
-  requestedBy: string;
-  createdAt: string;
-  status: string;
-}
+import React, { useState, useEffect } from 'react';
+import { ApprovalRequest } from '../../types/admin.types';
+import adminService from '../../services/adminService';
 
 const PendingApprovals: React.FC = () => {
   const [approvals, setApprovals] = useState<ApprovalRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Fetch from API
-    // Mock data for now
-    setTimeout(() => {
-      setApprovals([
-        {
-          id: '1',
-          type: 'Organizer Registration',
-          requestedBy: 'John Events Co.',
-          createdAt: '2024-01-15',
-          status: 'Pending'
-        },
-        {
-          id: '2',
-          type: 'Venue Approval',
-          requestedBy: 'City Convention Center',
-          createdAt: '2024-01-14',
-          status: 'Pending'
-        },
-        {
-          id: '3',
-          type: 'Event Approval',
-          requestedBy: 'Music Festival 2024',
-          createdAt: '2024-01-13',
-          status: 'Pending'
-        }
-      ]);
-      setLoading(false);
-    }, 1000);
+    loadPendingApprovals();
   }, []);
 
-  const handleApprove = (id: string) => {
-    // TODO: API call to approve
-    console.log('Approving:', id);
+  const loadPendingApprovals = async () => {
+    try {
+      const data = await adminService.getPendingApprovals();
+      setApprovals(data.slice(0, 5)); // Show only first 5 for dashboard
+    } catch (error) {
+      console.error('Failed to load pending approvals:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleReject = (id: string) => {
-    // TODO: API call to reject
-    console.log('Rejecting:', id);
+  const getApprovalTypeColor = (type: string) => {
+    switch (type) {
+      case 'Venue': return 'bg-blue-100 text-blue-800';
+      case 'Event': return 'bg-green-100 text-green-800';
+      case 'Organizer': return 'bg-purple-100 text-purple-800';
+      case 'Show': return 'bg-orange-100 text-orange-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
   };
 
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Pending Approvals</h3>
-        <div className="animate-pulse space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 bg-gray-200 rounded"></div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  const getApprovalIcon = (type: string) => {
+    switch (type) {
+      case 'Venue': return '🏢';
+      case 'Event': return '🎭';
+      case 'Organizer': return '👤';
+      case 'Show': return '🎪';
+      default: return '📋';
+    }
+  };
+
+  const getTimeAgo = (dateString: string) => {
+    const now = new Date();
+    const approvalDate = new Date(dateString);
+    const diffInMinutes = Math.floor((now.getTime() - approvalDate.getTime()) / (1000 * 60));
+    
+    if (diffInMinutes < 1) return 'Just now';
+    if (diffInMinutes < 60) return `${diffInMinutes} minutes ago`;
+    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`;
+    return `${Math.floor(diffInMinutes / 1440)} days ago`;
+  };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Pending Approvals</h3>
-        <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-          {approvals.length} pending
-        </span>
-      </div>
-      
-      <div className="space-y-3">
-        {approvals.map((approval) => (
-          <div key={approval.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-            <div className="flex-1">
-              <p className="font-medium text-gray-900">{approval.type}</p>
-              <p className="text-sm text-gray-600">{approval.requestedBy}</p>
-              <p className="text-xs text-gray-500">{new Date(approval.createdAt).toLocaleDateString()}</p>
-            </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => handleApprove(approval.id)}
-                className="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600 transition-colors"
-              >
-                Approve
-              </button>
-              <button
-                onClick={() => handleReject(approval.id)}
-                className="px-3 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600 transition-colors"
-              >
-                Reject
-              </button>
-            </div>
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div className="p-6 border-b border-gray-200">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Pending Approvals</h3>
+            <p className="text-sm text-gray-600 mt-1">Items requiring your attention</p>
           </div>
-        ))}
-      </div>
-      
-      {approvals.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          No pending approvals
+          {approvals.length > 0 && (
+            <span className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+              {approvals.length} pending
+            </span>
+          )}
         </div>
-      )}
+      </div>
+      <div className="p-6">
+        {loading ? (
+          <div className="space-y-4">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-start space-x-3 animate-pulse">
+                <div className="w-10 h-10 bg-gray-200 rounded-lg"></div>
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2 mb-2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/3"></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : approvals.length === 0 ? (
+          <div className="text-center py-8">
+            <div className="text-gray-400 text-4xl mb-4">✅</div>
+            <h4 className="text-lg font-medium text-gray-900 mb-2">All caught up!</h4>
+            <p className="text-gray-500">No pending approvals at the moment</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {approvals.map((approval) => (
+              <div key={approval.id} className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors">
+                <div className="flex-shrink-0 w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center text-lg">
+                  {getApprovalIcon(approval.approvalType)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${getApprovalTypeColor(approval.approvalType)}`}>
+                      {approval.approvalType}
+                    </span>
+                    <span className="bg-yellow-100 text-yellow-800 text-xs font-medium px-2 py-1 rounded-full">
+                      {approval.status}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium text-gray-900 mb-1">
+                    {approval.approvalType} Approval Request
+                  </p>
+                  <p className="text-sm text-gray-600 mb-1">
+                    Entity: {approval.targetEntityId}
+                  </p>
+                  <p className="text-xs text-gray-500">
+                    Requested {getTimeAgo(approval.createdAt)} by {approval.requestedByUserId}
+                  </p>
+                </div>
+              </div>
+            ))}
+            
+            {approvals.length >= 5 && (
+              <div className="text-center pt-4 border-t border-gray-200">
+                <button className="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                  View all approvals →
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

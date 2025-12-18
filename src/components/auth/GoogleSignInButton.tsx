@@ -15,17 +15,17 @@ const GoogleSignInButton: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
 
-  const handleCredentialResponse = async (response: any) => {
-    try {
-      await dispatch(googleAuth(response.credential)).unwrap();
-      toast.success('Successfully signed in with Google!');
-      navigate('/');
-    } catch (error: any) {
-      toast.error(error || 'Google sign-in failed');
-    }
-  };
-
   useEffect(() => {
+    const handleCredentialResponse = async (response: any) => {
+      try {
+        await dispatch(googleAuth(response.credential)).unwrap();
+        toast.success('Successfully signed in with Google!');
+        navigate('/');
+      } catch (error: any) {
+        toast.error(error || 'Google sign-in failed');
+      }
+    };
+
     // Load Google Identity Services script
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
@@ -38,9 +38,8 @@ const GoogleSignInButton: React.FC = () => {
         window.google.accounts.id.initialize({
           client_id: process.env.REACT_APP_GOOGLE_CLIENT_ID || '698458726464-licrdvk3i6pu4b4ks794p8baoek1ac83.apps.googleusercontent.com',
           callback: handleCredentialResponse,
-
         });
-      console.log(process.env.REACT_APP_GOOGLE_CLIENT_ID);
+        
         window.google.accounts.id.renderButton(
           document.getElementById('google-signin-button'),
           {
@@ -55,9 +54,11 @@ const GoogleSignInButton: React.FC = () => {
     };
 
     return () => {
-      document.head.removeChild(script);
+      if (document.head.contains(script)) {
+        document.head.removeChild(script);
+      }
     };
-  }, [handleCredentialResponse]);
+  }, [dispatch, navigate]);
 
   return (
     <div className="w-full">

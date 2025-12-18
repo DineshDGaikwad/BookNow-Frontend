@@ -7,6 +7,7 @@ export interface AdminVenueResponse {
   venueCity: string;
   venueState: string;
   venueCapacity: number;
+  venueContactInfo?: string;
   venueStatus: string;
   createdBy: string;
   createdAt: string;
@@ -23,6 +24,19 @@ export interface UpdateVenueRequest {
 
 export interface VenueApprovalRequest {
   rejectionReason?: string;
+}
+
+export interface AuditLogResponse {
+  auditId: string;
+  userId: string;
+  userName: string;
+  userRole: string;
+  action: string;
+  entityType: string;
+  entityId?: string;
+  details?: string;
+  ipAddress?: string;
+  timestamp: string;
 }
 
 export const adminAPI = {
@@ -58,6 +72,18 @@ export const adminAPI = {
 
   rejectVenue: async (venueId: string, data: VenueApprovalRequest): Promise<AdminVenueResponse> => {
     const response = await api.put(`/admin/venues/${venueId}/reject`, data);
+    return response.data;
+  },
+
+  // Audit Logs
+  getAuditLogs: async (filters: { entityType?: string; userId?: string; page?: number; pageSize?: number }): Promise<AuditLogResponse[]> => {
+    const params = new URLSearchParams();
+    if (filters.entityType) params.append('entityType', filters.entityType);
+    if (filters.userId) params.append('userId', filters.userId);
+    if (filters.page) params.append('page', filters.page.toString());
+    if (filters.pageSize) params.append('pageSize', filters.pageSize.toString());
+    
+    const response = await api.get(`/admin/audit-logs?${params.toString()}`);
     return response.data;
   }
 };

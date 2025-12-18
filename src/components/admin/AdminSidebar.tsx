@@ -15,8 +15,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ activeTab, setActiveTab }) 
     { id: 'approvals', label: 'Pending Approvals', icon: '✅' },
     { id: 'users', label: 'User Management', icon: '👥' },
     { id: 'venues', label: 'Venue Management', icon: '🏢' },
+    { id: 'eventoverview', label: 'Event Overview', icon: '🎭' },
+    { id: 'bookingoverview', label: 'Booking Overview', icon: '🎫' },
     { id: 'audit', label: 'Audit Logs', icon: '📋' },
-    { id: 'settings', label: 'System Settings', icon: '⚙️' },
   ];
 
   const handleLogout = () => {

@@ -1,12 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
-import { Filter, SlidersHorizontal, Grid3X3, List, X, Search } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Grid, List, X, Search } from 'lucide-react';
 import Header from '../../components/common/Header';
 import { EventCard } from '../../components/events/EventCard';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
 import { Badge } from '../../components/ui/badge';
-import { customerAPI, CustomerEvent, CustomerShow } from '../../services/customerAPI';
+import { customerAPI, CustomerEvent } from '../../services/customerAPI';
 
 const CustomerEventsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -190,7 +190,7 @@ const CustomerEventsPage: React.FC = () => {
               onClick={() => setView('grid')}
               className="rounded-none"
             >
-              <Grid3X3 className="h-4 w-4" />
+              <Grid className="h-4 w-4" />
             </Button>
             <Button
               variant={view === 'list' ? 'default' : 'ghost'}
