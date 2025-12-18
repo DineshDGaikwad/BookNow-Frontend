@@ -15,15 +15,8 @@ export const authService = {
 
   // Organizer Authentication
   organizerLogin: async (credentials: LoginRequest): Promise<AuthResponse> => {
-    const response = await fetch('http://localhost:5089/api/auth/organizer/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(credentials)
-    });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    return response.json();
+    const response = await api.post('/auth/organizer/login', credentials);
+    return response.data;
   },
 
   organizerRegister: async (data: OrganizerRegisterRequest): Promise<AuthResponse> => {

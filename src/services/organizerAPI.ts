@@ -33,7 +33,7 @@ export interface CreateEventRequest {
   eventDescription?: string;
   eventCategory: string;
   eventGenre?: string;
-  venueId: string;
+  venueId?: string;
   posterUrl?: string;
 }
 
@@ -56,6 +56,7 @@ export interface EventResponse {
   eventGenre?: string;
   posterUrl?: string;
   organizerId: string;
+  organizerName?: string;
   eventStatus: string;
   createdAt: string;
   showCount: number;
@@ -69,6 +70,11 @@ export const organizerAPI = {
 
   getEvents: async (organizerId: string): Promise<EventResponse[]> => {
     const response = await api.get(`/organizer/events?organizerId=${organizerId}`);
+    return response.data;
+  },
+
+  getAllEvents: async (): Promise<EventResponse[]> => {
+    const response = await api.get('/organizer/events/all');
     return response.data;
   },
 

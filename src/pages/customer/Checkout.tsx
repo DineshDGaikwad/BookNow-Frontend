@@ -1,99 +1,150 @@
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { ChevronRight, CreditCard, Smartphone, Building, Wallet, Lock, Clock } from 'lucide-react';
-import Header from '../../components/common/Header';
-import { Button } from '../../components/ui/button';
-import { Badge } from '../../components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Input } from '../../components/ui/input';
-import { cn } from '../../lib/utils';
+import { useState, useEffect } from 'react'
+import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { Navbar } from '../../components/layout/Navbar'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Button } from '../../components/ui/button'
+import { Input } from '../../components/ui/input'
+import { Badge } from '../../components/ui/badge'
+import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group'
+import { Label } from '../../components/ui/label'
+import { Separator } from '../../components/ui/separator'
+import { 
+  Clock, Shield, CreditCard, Smartphone, Building, Wallet,
+  Calendar, MapPin, AlertTriangle, Lock
+} from 'lucide-react'
+import { cn } from '../../lib/utils'
 
 const paymentMethods = [
-  { id: 'upi', label: 'UPI', icon: Smartphone, description: 'Pay using any UPI app' },
-  { id: 'card', label: 'Credit/Debit Card', icon: CreditCard, description: 'Visa, Mastercard, Amex' },
-  { id: 'netbanking', label: 'Net Banking', icon: Building, description: 'All major banks supported' },
-  { id: 'wallet', label: 'Wallets', icon: Wallet, description: 'PayPal, Apple Pay, etc.' },
-];
+  { 
+    id: 'upi', 
+    label: 'UPI', 
+    icon: Smartphone, 
+    description: 'Pay using any UPI app' 
+  },
+  { 
+    id: 'card', 
+    label: 'Credit/Debit Card', 
+    icon: CreditCard, 
+    description: 'Visa, Mastercard, Amex' 
+  },
+  { 
+    id: 'netbanking', 
+    label: 'Net Banking', 
+    icon: Building, 
+    description: 'All major banks supported' 
+  },
+  { 
+    id: 'wallet', 
+    label: 'Wallets', 
+    icon: Wallet, 
+    description: 'PayPal, Apple Pay, etc.' 
+  }
+]
 
-const Checkout: React.FC = () => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const [paymentMethod, setPaymentMethod] = useState('card');
-  const [isProcessing, setIsProcessing] = useState(false);
+export function Checkout() {
+  const location = useLocation()
+  const navigate = useNavigate()
+  const [timeLeft, setTimeLeft] = useState(600) // 10 minutes in seconds
+  const [paymentMethod, setPaymentMethod] = useState('card')
+  const [isProcessing, setIsProcessing] = useState(false)
   const [formData, setFormData] = useState({
-    name: '',
+    fullName: '',
     email: '',
     phone: '',
     cardNumber: '',
-    expiry: '',
+    expiryDate: '',
     cvv: '',
-    cardName: '',
+    nameOnCard: '',
     upiId: ''
-  });
+  })
 
-  // Mock data if not passed via state
-  const selectedSeats = location.state?.selectedSeats || [];
-  const showDetails = location.state?.showDetails;
+  const bookingData = location.state || {
+    selectedSeats: [],
+    subtotal: 0,
+    fee: 0,
+    total: 0
+  }
 
-  const subtotal = selectedSeats.reduce((sum: number, s: any) => sum + s.price, 0);
-  const convenienceFee = Math.round(subtotal * 0.05);
-  const total = subtotal + convenienceFee;
+  // Timer countdown
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft(prev => {
+        if (prev <= 1) {
+          navigate('/events')
+          return 0
+        }
+        return prev - 1
+      })
+    }, 1000)
+
+    return () => clearInterval(timer)
+  }, [navigate])
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
 
   const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }
 
-  const handlePayment = async () => {
-    setIsProcessing(true);
+  const handlePayment = () => {
+    setIsProcessing(true)
+    
     // Simulate payment processing
     setTimeout(() => {
-      const bookingId = 'BK' + Math.random().toString(36).substr(2, 9).toUpperCase();
-      navigate(`/booking/${bookingId}`, { 
-        state: { 
-          selectedSeats, 
-          showDetails, 
-          total,
-          bookingId 
-        } 
-      });
-    }, 2000);
-  };
+      navigate('/booking/BK123456')
+    }, 2000)
+  }
 
-  if (!selectedSeats.length) {
+  if (bookingData.selectedSeats.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        <Header />
-        <div className="container px-4 py-6 max-w-7xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">No Seats Selected</h1>
-          <Link to="/events" className="text-blue-500 hover:underline">← Back to Events</Link>
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+          <h1 className="text-2xl font-bold mb-4">No Booking Data Found</h1>
+          <p className="text-muted-foreground mb-6">
+            Please select seats first to proceed with checkout.
+          </p>
+          <Button asChild>
+            <Link to="/events">Browse Events</Link>
+          </Button>
         </div>
       </div>
-    );
+    )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header />
+    <div className="min-h-screen bg-background">
+      <Navbar />
       
-      <div className="container px-4 py-6 max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-sm text-gray-600 mb-6">
-          <Link to="/events" className="hover:text-gray-900">Events</Link>
-          <ChevronRight className="h-4 w-4" />
-          <span className="text-gray-900">Checkout</span>
-        </nav>
+        <div className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
+          <Link to="/events" className="hover:text-foreground">Events</Link>
+          <span>/</span>
+          <span className="text-foreground">Checkout</span>
+        </div>
 
         {/* Timer Warning */}
-        <div className="mb-6 p-4 rounded-lg bg-yellow-50 border border-yellow-200 flex items-center gap-3">
-          <Clock className="h-5 w-5 text-yellow-600" />
-          <div>
-            <p className="font-semibold text-yellow-800">Seats reserved for 9:45</p>
-            <p className="text-sm text-yellow-700">Complete payment to confirm your booking</p>
+        <div className="mb-6">
+          <div className="p-4 rounded-lg bg-warning/10 border border-warning/30 flex items-center space-x-3">
+            <Clock className="h-5 w-5 text-warning" />
+            <div>
+              <p className="font-semibold text-warning">
+                Seats reserved for {formatTime(timeLeft)}
+              </p>
+              <p className="text-sm text-warning/80">
+                Complete your payment to confirm booking
+              </p>
+            </div>
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Checkout Form */}
           <div className="lg:col-span-2 space-y-6">
             {/* Contact Details */}
             <Card>
@@ -101,34 +152,25 @@ const Checkout: React.FC = () => {
                 <CardTitle>Contact Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <Input 
-                      placeholder="John Doe" 
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <Input 
-                      type="email" 
-                      placeholder="john@example.com" 
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                    <Input 
-                      type="tel" 
-                      placeholder="+91 98765 43210" 
-                      value={formData.phone}
-                      onChange={(e) => handleInputChange('phone', e.target.value)}
-                    />
-                  </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    placeholder="Full Name"
+                    value={formData.fullName}
+                    onChange={(e) => handleInputChange('fullName', e.target.value)}
+                  />
+                  <Input
+                    type="email"
+                    placeholder="Email Address"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                  />
                 </div>
+                <Input
+                  type="tel"
+                  placeholder="Phone Number"
+                  value={formData.phone}
+                  onChange={(e) => handleInputChange('phone', e.target.value)}
+                />
               </CardContent>
             </Card>
 
@@ -138,137 +180,152 @@ const Checkout: React.FC = () => {
                 <CardTitle>Payment Method</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {paymentMethods.map((method) => (
-                    <label
-                      key={method.id}
-                      className={cn(
-                        "flex items-center gap-4 p-4 rounded-lg border cursor-pointer transition-all",
-                        paymentMethod === method.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-blue-300"
-                      )}
-                    >
-                      <input
-                        type="radio"
-                        name="paymentMethod"
-                        value={method.id}
-                        checked={paymentMethod === method.id}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="text-blue-500"
-                      />
-                      <div className="p-2 rounded-lg bg-gray-100">
-                        <method.icon className="h-5 w-5" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-semibold">{method.label}</p>
-                        <p className="text-sm text-gray-600">{method.description}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
+                <RadioGroup value={paymentMethod} onValueChange={setPaymentMethod}>
+                  <div className="space-y-3">
+                    {paymentMethods.map((method, idx) => {
+                      const Icon = method.icon
+                      return (
+                        <div key={`payment-${method.id}-${idx}`} className="flex items-center space-x-3">
+                          <RadioGroupItem value={method.id} id={method.id} />
+                          <Label 
+                            htmlFor={method.id} 
+                            className="flex items-center space-x-3 cursor-pointer flex-1 p-3 rounded-lg border border-transparent hover:border-border transition-colors"
+                          >
+                            <Icon className="h-5 w-5 text-primary" />
+                            <div>
+                              <div className="font-medium">{method.label}</div>
+                              <div className="text-sm text-muted-foreground">
+                                {method.description}
+                              </div>
+                            </div>
+                          </Label>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </RadioGroup>
 
-                {/* Card Details */}
+                {/* Payment Form Fields */}
                 {paymentMethod === 'card' && (
-                  <div className="mt-6 p-4 rounded-lg bg-gray-50 space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Card Number</label>
-                      <Input 
-                        placeholder="1234 5678 9012 3456" 
-                        value={formData.cardNumber}
-                        onChange={(e) => handleInputChange('cardNumber', e.target.value)}
-                      />
-                    </div>
+                  <div className="mt-6 p-4 rounded-lg bg-muted/30 space-y-4">
+                    <Input
+                      placeholder="Card Number (1234 5678 9012 3456)"
+                      value={formData.cardNumber}
+                      onChange={(e) => handleInputChange('cardNumber', e.target.value)}
+                    />
                     <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-                        <Input 
-                          placeholder="MM/YY" 
-                          value={formData.expiry}
-                          onChange={(e) => handleInputChange('expiry', e.target.value)}
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">CVV</label>
-                        <Input 
-                          placeholder="123" 
-                          type="password" 
-                          value={formData.cvv}
-                          onChange={(e) => handleInputChange('cvv', e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Name on Card</label>
-                      <Input 
-                        placeholder="John Doe" 
-                        value={formData.cardName}
-                        onChange={(e) => handleInputChange('cardName', e.target.value)}
+                      <Input
+                        placeholder="MM/YY"
+                        value={formData.expiryDate}
+                        onChange={(e) => handleInputChange('expiryDate', e.target.value)}
+                      />
+                      <Input
+                        placeholder="CVV"
+                        type="password"
+                        value={formData.cvv}
+                        onChange={(e) => handleInputChange('cvv', e.target.value)}
                       />
                     </div>
+                    <Input
+                      placeholder="Name on Card"
+                      value={formData.nameOnCard}
+                      onChange={(e) => handleInputChange('nameOnCard', e.target.value)}
+                    />
                   </div>
                 )}
 
-                {/* UPI */}
                 {paymentMethod === 'upi' && (
-                  <div className="mt-6 p-4 rounded-lg bg-gray-50">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">UPI ID</label>
-                    <Input 
-                      placeholder="yourname@upi" 
+                  <div className="mt-6 p-4 rounded-lg bg-muted/30">
+                    <Input
+                      placeholder="UPI ID (yourname@upi)"
                       value={formData.upiId}
                       onChange={(e) => handleInputChange('upiId', e.target.value)}
                     />
+                  </div>
+                )}
+
+                {paymentMethod === 'netbanking' && (
+                  <div className="mt-6 p-4 rounded-lg bg-muted/30">
+                    <p className="text-sm text-muted-foreground">
+                      You will be redirected to your bank's website to complete the payment.
+                    </p>
+                  </div>
+                )}
+
+                {paymentMethod === 'wallet' && (
+                  <div className="mt-6 p-4 rounded-lg bg-muted/30">
+                    <p className="text-sm text-muted-foreground">
+                      Choose your preferred wallet on the next page.
+                    </p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
 
-          {/* Order Summary Sidebar */}
-          <div className="lg:col-span-1">
+          {/* Order Summary */}
+          <div className="space-y-6">
             <Card className="sticky top-24">
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>
+              
               <CardContent className="space-y-4">
-                <div className="text-sm">
-                  <p className="font-semibold text-gray-900">{showDetails?.eventTitle || 'Event'}</p>
-                  <p className="text-gray-600">
-                    {showDetails ? new Date(showDetails.showStartTime).toLocaleDateString() : 'Date'} • 
-                    {showDetails ? new Date(showDetails.showStartTime).toLocaleTimeString() : 'Time'}
-                  </p>
-                  <p className="text-gray-600">{showDetails?.venueName || 'Venue'}</p>
+                {/* Event Info */}
+                <div>
+                  <h3 className="font-semibold">Taylor Swift | The Eras Tour</h3>
+                  <div className="space-y-1 mt-2 text-sm text-muted-foreground">
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>December 15, 2024 • 7:00 PM</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <MapPin className="h-4 w-4" />
+                      <span>Madison Square Garden</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="border-t border-gray-200 pt-4">
-                  <h4 className="font-semibold mb-2">Seats ({selectedSeats.length})</h4>
+                <Separator />
+
+                {/* Selected Seats */}
+                <div>
+                  <h4 className="font-medium mb-3">
+                    Seats ({bookingData.selectedSeats.length})
+                  </h4>
                   <div className="space-y-2">
-                    {selectedSeats.map((seat: any) => (
-                      <div key={seat.seatId} className="flex items-center justify-between text-sm">
-                        <div className="flex items-center gap-2">
+                    {bookingData.selectedSeats.map((seat: any) => (
+                      <div key={seat.id} className="flex items-center justify-between text-sm">
+                        <div className="flex items-center space-x-2">
                           <Badge variant="outline" className="text-xs">
-                            {seat.seatId}
+                            {seat.id}
                           </Badge>
-                          <span className="text-gray-600">{seat.section}</span>
+                          <Badge variant="gold" className="text-xs">
+                            {seat.section}
+                          </Badge>
                         </div>
-                        <span>₹{seat.price}</span>
+                        <span className="font-medium">₹{seat.price}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="border-t border-gray-200 pt-4 space-y-2">
+                <Separator />
+
+                {/* Price Breakdown */}
+                <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Subtotal</span>
-                    <span>₹{subtotal}</span>
+                    <span>Subtotal</span>
+                    <span>₹{bookingData.subtotal}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-600">Convenience Fee</span>
-                    <span>₹{convenienceFee}</span>
+                    <span>Service Fee</span>
+                    <span>₹{bookingData.fee}</span>
                   </div>
-                  <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
+                  <Separator />
+                  <div className="flex justify-between font-semibold text-lg">
                     <span>Total</span>
-                    <span className="text-blue-600">₹{total}</span>
+                    <span>₹{bookingData.total}</span>
                   </div>
                 </div>
 
@@ -278,19 +335,13 @@ const Checkout: React.FC = () => {
                   onClick={handlePayment}
                   disabled={isProcessing}
                 >
-                  {isProcessing ? (
-                    <>Processing...</>
-                  ) : (
-                    <>
-                      <Lock className="h-4 w-4 mr-2" />
-                      Pay ₹{total}
-                    </>
-                  )}
+                  <Lock className="h-4 w-4 mr-2" />
+                  {isProcessing ? 'Processing...' : `Pay ₹{bookingData.total}`}
                 </Button>
 
-                <div className="flex items-center justify-center gap-2 text-xs text-gray-500">
-                  <Lock className="h-3 w-3" />
-                  <span>Secure 256-bit SSL encryption</span>
+                <div className="flex items-center justify-center space-x-2 text-xs text-muted-foreground">
+                  <Shield className="h-4 w-4" />
+                  <span>Secured by 256-bit SSL encryption</span>
                 </div>
               </CardContent>
             </Card>
@@ -298,7 +349,5 @@ const Checkout: React.FC = () => {
         </div>
       </div>
     </div>
-  );
-};
-
-export default Checkout;
+  )
+}

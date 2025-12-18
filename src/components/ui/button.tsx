@@ -1,48 +1,58 @@
-import * as React from "react";
-import { cn } from "../../lib/utils";
+import * as React from "react"
+import { Slot } from "@radix-ui/react-slot"
+import { cva, type VariantProps } from "class-variance-authority"
+import { cn } from "../../lib/utils"
 
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost' | 'link' | 'hero' | 'glass';
-  size?: 'default' | 'sm' | 'lg' | 'xl' | 'icon';
-  asChild?: boolean;
+const buttonVariants = cva(
+  "inline-flex items-center justify-center whitespace-nowrap rounded-lg text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50",
+  {
+    variants: {
+      variant: {
+        default: "bg-primary text-primary-foreground hover:bg-primary/90 glow-primary",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/90 glow-secondary",
+        accent: "bg-accent text-accent-foreground hover:bg-accent/90 glow-accent",
+        hero: "bg-gradient-to-r from-primary to-secondary text-white hover:shadow-lg hover:scale-105",
+        glass: "glass text-foreground hover:bg-background/90",
+        gold: "bg-gradient-to-r from-gold to-orange-500 text-white hover:shadow-lg hover:scale-105",
+        outline: "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
+        ghost: "hover:bg-accent hover:text-accent-foreground",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+      },
+      size: {
+        default: "h-10 px-4 py-2",
+        sm: "h-9 rounded-md px-3",
+        lg: "h-11 rounded-md px-8",
+        xl: "h-12 rounded-lg px-10 text-base",
+        icon: "h-10 w-10",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      size: "default",
+    },
+  }
+)
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean
+  variant?: 'default' | 'secondary' | 'accent' | 'hero' | 'glass' | 'gold' | 'outline' | 'ghost' | 'destructive'
+  size?: 'default' | 'sm' | 'lg' | 'xl' | 'icon'
 }
 
-const buttonVariants = {
-  variant: {
-    default: "bg-blue-500 text-white hover:bg-blue-600 shadow-lg hover:shadow-xl",
-    destructive: "bg-red-500 text-white hover:bg-red-600",
-    outline: "border border-gray-300 bg-transparent hover:bg-gray-50 text-gray-700",
-    secondary: "bg-gray-100 text-gray-900 hover:bg-gray-200",
-    ghost: "hover:bg-gray-100 text-gray-700",
-    link: "text-blue-500 underline-offset-4 hover:underline",
-    hero: "bg-gradient-to-r from-blue-500 to-purple-600 text-white hover:from-blue-600 hover:to-purple-700 shadow-xl",
-    glass: "bg-white/20 backdrop-blur-md border border-white/30 text-white hover:bg-white/30",
-  },
-  size: {
-    default: "h-10 px-4 py-2",
-    sm: "h-9 rounded-md px-3 text-sm",
-    lg: "h-12 rounded-lg px-8 text-base",
-    xl: "h-14 rounded-xl px-10 text-lg",
-    icon: "h-10 w-10",
-  },
-};
-
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = 'default', size = 'default', ...props }, ref) => {
+  ({ className, variant, size, asChild = false, ...props }, ref) => {
+    const Comp = asChild ? Slot : "button"
     return (
-      <button
-        className={cn(
-          "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
-          buttonVariants.variant[variant],
-          buttonVariants.size[size],
-          className
-        )}
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
         {...props}
       />
-    );
+    )
   }
-);
-Button.displayName = "Button";
+)
+Button.displayName = "Button"
 
-export { Button };
+export { Button, buttonVariants }

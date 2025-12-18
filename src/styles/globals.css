@@ -1,0 +1,181 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Dark Entertainment Theme */
+    --background: 240 15% 6%;
+    --foreground: 0 0% 98%;
+    --primary: 262 83% 58%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 330 81% 60%;
+    --secondary-foreground: 0 0% 98%;
+    --accent: 199 89% 48%;
+    --accent-foreground: 0 0% 98%;
+    --gold: 43 96% 56%;
+    --gold-foreground: 0 0% 98%;
+    --muted: 240 10% 12%;
+    --muted-foreground: 240 5% 65%;
+    --card: 240 12% 10%;
+    --card-foreground: 0 0% 98%;
+    --border: 240 10% 18%;
+    --input: 240 10% 18%;
+    --ring: 262 83% 58%;
+    --success: 142 76% 45%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --popover: 240 12% 10%;
+    --popover-foreground: 0 0% 98%;
+    --radius: 0.5rem;
+    
+    /* Gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(262 83% 58%), hsl(330 81% 60%));
+    --gradient-hero: radial-gradient(ellipse at center, hsl(262 83% 58% / 0.2), transparent);
+    --gradient-card: linear-gradient(135deg, hsl(240 12% 10%), hsl(240 15% 12%));
+    --gradient-accent: linear-gradient(135deg, hsl(199 89% 48%), hsl(262 83% 58%));
+    --gradient-gold: linear-gradient(135deg, hsl(43 96% 56%), hsl(25 95% 53%));
+    
+    /* Shadows & Glows */
+    --shadow-glow: 0 0 40px hsl(262 83% 58% / 0.3);
+    --shadow-glow-secondary: 0 0 40px hsl(330 81% 60% / 0.3);
+    --shadow-glow-accent: 0 0 40px hsl(199 89% 48% / 0.3);
+    --shadow-card: 0 8px 32px hsl(0 0% 0% / 0.5);
+    --shadow-elevated: 0 20px 60px hsl(0 0% 0% / 0.6);
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif;
+  }
+}
+
+@layer components {
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent;
+  }
+
+  .glow-primary {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .glow-secondary {
+    box-shadow: var(--shadow-glow-secondary);
+  }
+
+  .glow-accent {
+    box-shadow: var(--shadow-glow-accent);
+  }
+
+  .glass {
+    @apply bg-background/80 backdrop-blur-xl border border-border/50;
+  }
+
+  .card-elevated {
+    box-shadow: var(--shadow-card);
+  }
+
+  .seat-available {
+    @apply bg-accent/20 border-accent hover:bg-accent/30 cursor-pointer transition-all duration-200;
+  }
+
+  .seat-booked {
+    @apply bg-muted/50 border-muted-foreground/30 cursor-not-allowed opacity-50;
+  }
+
+  .seat-selected {
+    @apply bg-primary border-primary text-primary-foreground glow-primary;
+  }
+
+  .seat-premium {
+    @apply bg-gold/20 border-gold hover:bg-gold/30 cursor-pointer transition-all duration-200;
+  }
+
+  .seat-vip {
+    @apply bg-secondary/20 border-secondary hover:bg-secondary/30 cursor-pointer transition-all duration-200;
+  }
+}
+
+@layer utilities {
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite alternate;
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.5s ease-out forwards;
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out forwards;
+  }
+
+  .animate-scale-in {
+    animation: scaleIn 0.5s ease-out forwards;
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 20px hsl(262 83% 58% / 0.2);
+  }
+  to {
+    box-shadow: 0 0 40px hsl(262 83% 58% / 0.4);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
