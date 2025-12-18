@@ -7,8 +7,6 @@ export interface CreateShowRequest {
   showEndTime: string;
   showLanguage?: string;
   showFormat?: string;
-  showPriceMin?: number;
-  showPriceMax?: number;
 }
 
 export interface ShowResponse {
@@ -21,13 +19,15 @@ export interface ShowResponse {
   showEndTime: string;
   showLanguage?: string;
   showFormat?: string;
-  showPriceMin?: number;
-  showPriceMax?: number;
   showStatus: number;
   createdAt: string;
   updatedAt?: string;
   availableSeats: number;
   totalSeats: number;
+  seatPricing: Array<{
+    seatType: string;
+    showPrice: number;
+  }>;
 }
 
 export interface UpdateShowRequest {
@@ -64,7 +64,7 @@ export const showAPI = {
   },
 
   createShowWithSeatPricing: async (organizerId: string, data: CreateShowWithSeatPricingRequest): Promise<ShowResponse> => {
-    const response = await api.post(`/organizer/shows?organizerId=${organizerId}`, data);
+    const response = await api.post(`/organizer/shows/with-seat-pricing?organizerId=${organizerId}`, data);
     return response.data;
   },
 

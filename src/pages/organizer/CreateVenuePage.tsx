@@ -17,9 +17,7 @@ const CreateVenuePage: React.FC = () => {
     venueState: '',
     venueZipcode: '',
     venueCapacity: 0,
-    venueContactInfo: '',
-    defaultPriceMin: 0,
-    defaultPriceMax: 0
+    venueContactInfo: ''
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -174,42 +172,7 @@ const CreateVenuePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Price Range */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label htmlFor="defaultPriceMin" className="block text-sm font-medium text-gray-700 mb-2">
-                  Default Min Price (₹)
-                </label>
-                <input
-                  type="number"
-                  id="defaultPriceMin"
-                  name="defaultPriceMin"
-                  min="0"
-                  step="0.01"
-                  value={formData.defaultPriceMin}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Minimum price"
-                />
-              </div>
 
-              <div>
-                <label htmlFor="defaultPriceMax" className="block text-sm font-medium text-gray-700 mb-2">
-                  Default Max Price (₹)
-                </label>
-                <input
-                  type="number"
-                  id="defaultPriceMax"
-                  name="defaultPriceMax"
-                  min="0"
-                  step="0.01"
-                  value={formData.defaultPriceMax}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Maximum price"
-                />
-              </div>
-            </div>
 
             {/* Info Box */}
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

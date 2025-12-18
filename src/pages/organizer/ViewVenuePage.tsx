@@ -33,14 +33,12 @@ const ViewVenuePage: React.FC = () => {
         }
       } catch (err) {
         // If organizer endpoint fails, try public endpoint
-        console.log('Organizer endpoint failed, trying public endpoint');
       }
       
       // Fallback to public endpoint
       const data = await venueAPI.getPublicVenue(venueId);
       setVenue(data);
     } catch (error) {
-      console.error('Failed to load venue:', error);
       toast.error('Failed to load venue');
     } finally {
       setLoading(false);

@@ -15,17 +15,23 @@ const OrganizerEventsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'live' | 'draft' | 'cancelled'>('all');
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'my-events' | 'all-events'>('my-events');
 
   useEffect(() => {
     if (user?.userId) {
       loadEvents();
     }
-  }, [user]);
+  }, [user, viewMode]);
 
   const loadEvents = async () => {
     try {
       if (!user?.userId) return;
-      const data = await organizerAPI.getEvents(user.userId);
+      let data;
+      if (viewMode === 'my-events') {
+        data = await organizerAPI.getEvents(user.userId);
+      } else {
+        data = await organizerAPI.getAllEvents();
+      }
       setEvents(data);
     } catch (error: any) {
       console.error('Failed to load events:', error);
@@ -97,13 +103,43 @@ const OrganizerEventsPage: React.FC = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-white">Event Management</h1>
-            <p className="text-gray-400 mt-2">Create and manage your event portfolio</p>
+            <p className="text-gray-400 mt-2">
+              {viewMode === 'my-events' ? 'Create and manage your event portfolio' : 'Browse all events on the platform'}
+            </p>
           </div>
-          <Button asChild className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white">
-            <Link to="/organizer/events/create">
-              <Plus className="h-4 w-4" />
-              Create New Event
-            </Link>
+          {viewMode === 'my-events' && (
+            <Button asChild className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white">
+              <Link to="/organizer/events/create">
+                <Plus className="h-4 w-4" />
+                Create New Event
+              </Link>
+            </Button>
+          )}
+        </div>
+
+        {/* View Mode Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-gray-700">
+          <Button
+            variant="ghost"
+            onClick={() => setViewMode('my-events')}
+            className={`px-6 py-3 rounded-none border-b-2 transition-colors ${
+              viewMode === 'my-events'
+                ? 'border-purple-500 text-purple-400 bg-purple-900/20'
+                : 'border-transparent text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            My Events
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => setViewMode('all-events')}
+            className={`px-6 py-3 rounded-none border-b-2 transition-colors ${
+              viewMode === 'all-events'
+                ? 'border-purple-500 text-purple-400 bg-purple-900/20'
+                : 'border-transparent text-gray-400 hover:text-white hover:bg-gray-800'
+            }`}
+          >
+            All Events
           </Button>
         </div>
 
@@ -213,14 +249,20 @@ const OrganizerEventsPage: React.FC = () => {
           <div className="text-center py-12">
             <Calendar className="h-12 w-12 text-gray-500 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-white mb-2">
-              {filter === 'all' ? 'No Events Yet' : `No ${filter} events`}
+              {viewMode === 'my-events' 
+                ? (filter === 'all' ? 'No Events Yet' : `No ${filter} events`) 
+                : (filter === 'all' ? 'No Events Available' : `No ${filter} events available`)}
             </h3>
             <p className="text-gray-400 mb-4">
-              {filter === 'all' 
-                ? 'Start creating amazing events for your audience!' 
-                : `You don't have any ${filter} events at the moment.`}
+              {viewMode === 'my-events'
+                ? (filter === 'all' 
+                    ? 'Start creating amazing events for your audience!' 
+                    : `You don't have any ${filter} events at the moment.`)
+                : (filter === 'all'
+                    ? 'No events are currently available on the platform.'
+                    : `No ${filter} events are currently available.`)}
             </p>
-            {filter === 'all' && (
+            {filter === 'all' && viewMode === 'my-events' && (
               <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white">
                 <Link to="/organizer/events/create">
                   <Plus className="h-4 w-4 mr-2" />
@@ -277,33 +319,44 @@ const OrganizerEventsPage: React.FC = () => {
                           View
                         </Link>
                       </Button>
-                      <Button size="sm" variant="outline" className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700" asChild>
-                        <Link to={`/organizer/events/${event.eventId}/edit`}>
-                          <Edit className="h-4 w-4 mr-1" />
-                          Edit
-                        </Link>
-                      </Button>
-                      <Button 
-                        size="sm" 
-                        variant="destructive"
-                        className="bg-red-600 hover:bg-red-700 text-white"
-                        onClick={() => handleDeleteEvent(event.eventId, event.eventTitle)}
-                        disabled={deleting === event.eventId}
-                      >
-                        {deleting === event.eventId ? (
-                          <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        ) : (
-                          <Trash2 className="h-4 w-4" />
-                        )}
-                      </Button>
+                      {viewMode === 'my-events' && event.organizerId === user?.userId && (
+                        <>
+                          <Button size="sm" variant="outline" className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-700" asChild>
+                            <Link to={`/organizer/events/${event.eventId}/edit`}>
+                              <Edit className="h-4 w-4 mr-1" />
+                              Edit
+                            </Link>
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="destructive"
+                            className="bg-red-600 hover:bg-red-700 text-white"
+                            onClick={() => handleDeleteEvent(event.eventId, event.eventTitle)}
+                            disabled={deleting === event.eventId}
+                          >
+                            {deleting === event.eventId ? (
+                              <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                            ) : (
+                              <Trash2 className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </>
+                      )}
                     </div>
                     
-                    <Button size="sm" variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700" asChild>
-                      <Link to={`/organizer/events/${event.eventId}/shows`}>
-                        <Calendar className="h-4 w-4 mr-1" />
-                        Manage Shows ({event.showCount || 0})
-                      </Link>
-                    </Button>
+                    {viewMode === 'my-events' && event.organizerId === user?.userId && (
+                      <Button size="sm" variant="outline" className="w-full border-gray-600 text-gray-300 hover:bg-gray-700" asChild>
+                        <Link to={`/organizer/events/${event.eventId}/shows`}>
+                          <Calendar className="h-4 w-4 mr-1" />
+                          Manage Shows ({event.showCount || 0})
+                        </Link>
+                      </Button>
+                    )}
+                    {viewMode === 'all-events' && (
+                      <div className="text-xs text-gray-500 mt-2">
+                        Organizer: {event.organizerName || event.organizerId}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

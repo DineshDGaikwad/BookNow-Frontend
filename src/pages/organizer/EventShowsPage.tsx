@@ -23,9 +23,7 @@ const EventShowsPage: React.FC = () => {
     showStartTime: '',
     showEndTime: '',
     showLanguage: '',
-    showFormat: '',
-    showPriceMin: 0,
-    showPriceMax: 0
+    showFormat: ''
   });
 
   useEffect(() => {
@@ -55,18 +53,7 @@ const EventShowsPage: React.FC = () => {
   const handleCreateShow = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate venue pricing
-    const selectedVenue = venues.find(v => v.venueId === formData.venueId);
-    if (selectedVenue && selectedVenue.defaultPriceMin && selectedVenue.defaultPriceMax) {
-      if ((formData.showPriceMin || 0) < selectedVenue.defaultPriceMin) {
-        toast.error(`Minimum price cannot be less than venue minimum: ₹${selectedVenue.defaultPriceMin}`);
-        return;
-      }
-      if ((formData.showPriceMax || 0) > selectedVenue.defaultPriceMax) {
-        toast.error(`Maximum price cannot exceed venue maximum: ₹${selectedVenue.defaultPriceMax}`);
-        return;
-      }
-    }
+
     
     try {
       const userId = user?.userId || 'test-organizer-id';
@@ -77,12 +64,7 @@ const EventShowsPage: React.FC = () => {
           showLanguage: formData.showLanguage,
           showFormat: formData.showFormat
         });
-        if (formData.showPriceMin !== editingShow.showPriceMin || formData.showPriceMax !== editingShow.showPriceMax) {
-          await showAPI.updatePricing(editingShow.showId, userId, {
-            showPriceMin: formData.showPriceMin,
-            showPriceMax: formData.showPriceMax
-          });
-        }
+
         toast.success('Show updated successfully!');
       } else {
         // Convert datetime-local format to ISO format
@@ -110,9 +92,7 @@ const EventShowsPage: React.FC = () => {
       showStartTime: '',
       showEndTime: '',
       showLanguage: '',
-      showFormat: '',
-      showPriceMin: 0,
-      showPriceMax: 0
+      showFormat: ''
     });
   };
 
@@ -124,9 +104,7 @@ const EventShowsPage: React.FC = () => {
       showStartTime: new Date(show.showStartTime).toISOString().slice(0, 16),
       showEndTime: new Date(show.showEndTime).toISOString().slice(0, 16),
       showLanguage: show.showLanguage || '',
-      showFormat: show.showFormat || '',
-      showPriceMin: show.showPriceMin || 0,
-      showPriceMax: show.showPriceMax || 0
+      showFormat: show.showFormat || ''
     });
     setShowCreateForm(true);
   };
@@ -165,12 +143,9 @@ const EventShowsPage: React.FC = () => {
   };
 
   const handleVenueChange = (venueId: string) => {
-    const selectedVenue = venues.find(v => v.venueId === venueId);
     setFormData({
       ...formData,
-      venueId,
-      showPriceMin: selectedVenue?.defaultPriceMin || 0,
-      showPriceMax: selectedVenue?.defaultPriceMax || 0
+      venueId
     });
   };
 
@@ -228,7 +203,7 @@ const EventShowsPage: React.FC = () => {
                     <option value="">Select venue</option>
                     {venues.map(venue => (
                       <option key={venue.venueId} value={venue.venueId}>
-                        {venue.venueName} - {venue.venueCity} (₹{venue.defaultPriceMin}-₹{venue.defaultPriceMax})
+                        {venue.venueName} - {venue.venueCity}
                       </option>
                     ))}
                   </select>
@@ -278,55 +253,23 @@ const EventShowsPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Format</label>
-                  <select
-                    value={formData.showFormat}
-                    onChange={(e) => setFormData({...formData, showFormat: e.target.value})}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
-                  >
-                    <option value="">Select format</option>
-                    <option value="Live">Live Performance</option>
-                    <option value="2D">2D</option>
-                    <option value="3D">3D</option>
-                    <option value="IMAX">IMAX</option>
-                    <option value="4DX">4DX</option>
-                    <option value="Dolby Atmos">Dolby Atmos</option>
-                    <option value="Virtual">Virtual Event</option>
-                    <option value="Hybrid">Hybrid</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Min Price (₹)</label>
-                  <input
-                    type="number"
-                    value={formData.showPriceMin}
-                    onChange={(e) => setFormData({...formData, showPriceMin: Number(e.target.value)})}
-                    min={venues.find(v => v.venueId === formData.venueId)?.defaultPriceMin || 0}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
-                  />
-                  {formData.venueId && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Venue minimum: ₹{venues.find(v => v.venueId === formData.venueId)?.defaultPriceMin}
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Max Price (₹)</label>
-                  <input
-                    type="number"
-                    value={formData.showPriceMax}
-                    onChange={(e) => setFormData({...formData, showPriceMax: Number(e.target.value)})}
-                    max={venues.find(v => v.venueId === formData.venueId)?.defaultPriceMax || 10000}
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
-                  />
-                  {formData.venueId && (
-                    <p className="text-xs text-gray-400 mt-1">
-                      Venue maximum: ₹{venues.find(v => v.venueId === formData.venueId)?.defaultPriceMax}
-                    </p>
-                  )}
-                </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Format</label>
+                <select
+                  value={formData.showFormat}
+                  onChange={(e) => setFormData({...formData, showFormat: e.target.value})}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-white"
+                >
+                  <option value="">Select format</option>
+                  <option value="Live">Live Performance</option>
+                  <option value="2D">2D</option>
+                  <option value="3D">3D</option>
+                  <option value="IMAX">IMAX</option>
+                  <option value="4DX">4DX</option>
+                  <option value="Dolby Atmos">Dolby Atmos</option>
+                  <option value="Virtual">Virtual Event</option>
+                  <option value="Hybrid">Hybrid</option>
+                </select>
               </div>
 
               <div className="flex space-x-4">
@@ -390,7 +333,11 @@ const EventShowsPage: React.FC = () => {
                         </div>
                         <div>
                           <span className="font-medium">Price:</span><br />
-                          ₹{show.showPriceMin} - ₹{show.showPriceMax}
+                          {show.seatPricing && show.seatPricing.length > 0 ? (
+                            `₹${Math.min(...show.seatPricing.map(sp => sp.showPrice))} - ₹${Math.max(...show.seatPricing.map(sp => sp.showPrice))}`
+                          ) : (
+                            'Pricing not set'
+                          )}
                         </div>
                         <div>
                           <span className="font-medium">Seats:</span><br />

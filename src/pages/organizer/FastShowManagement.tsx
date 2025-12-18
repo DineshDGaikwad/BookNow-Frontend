@@ -331,7 +331,13 @@ const FastShowManagement: React.FC = () => {
                     <p className="text-sm text-gray-600">
                       {new Date(show.showStartTime).toLocaleString()} - {new Date(show.showEndTime).toLocaleString()}
                     </p>
-                    <p className="text-sm">₹{show.showPriceMin} - ₹{show.showPriceMax}</p>
+                    <p className="text-sm">
+                      {show.seatPricing && show.seatPricing.length > 0 ? (
+                        `₹${Math.min(...show.seatPricing.map(sp => sp.showPrice))} - ₹${Math.max(...show.seatPricing.map(sp => sp.showPrice))}`
+                      ) : (
+                        'Pricing not set'
+                      )}
+                    </p>
                   </div>
                   <button
                     onClick={() => handleDeleteShow(show.showId)}
