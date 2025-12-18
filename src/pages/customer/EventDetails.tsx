@@ -100,7 +100,19 @@ export function EventDetails() {
     )
   }
 
-  const displayEvent = event || mockEvent
+  if (!event) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Event not found</p>
+          <Button asChild className="mt-4">
+            <Link to="/events">Back to Events</Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
 
   const getAvailabilityConfig = (availability: string, seatsLeft: number) => {
     switch (availability) {
@@ -139,8 +151,8 @@ export function EventDetails() {
         {/* Hero Section */}
         <div className="relative h-[50vh] min-h-[400px] overflow-hidden">
           <img
-            src={event?.posterUrl || mockEvent.image}
-            alt={event?.eventTitle || mockEvent.title}
+            src={event.posterUrl || '/api/placeholder/800/400'}
+            alt={event.eventTitle}
             className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
@@ -182,21 +194,21 @@ export function EventDetails() {
               <Card className="card-elevated">
                 <CardContent className="p-6">
                   <div className="flex flex-wrap gap-2 mb-4">
-                    <Badge variant="secondary">{event?.eventCategory || mockEvent.category}</Badge>
-                    {event?.eventGenre && <Badge variant="accent">{event.eventGenre}</Badge>}
+                    <Badge variant="secondary">{event.eventCategory}</Badge>
+                    {event.eventGenre && <Badge variant="accent">{event.eventGenre}</Badge>}
                   </div>
                   
-                  <h1 className="text-4xl font-bold mb-4">{event?.eventTitle || mockEvent.title}</h1>
+                  <h1 className="text-4xl font-bold mb-4">{event.eventTitle}</h1>
                   
                   <div className="flex items-center space-x-6 text-muted-foreground">
                     <div className="flex items-center space-x-1">
                       <Star className="h-5 w-5 text-gold fill-gold" />
-                      <span className="font-semibold text-foreground">{event?.averageRating?.toFixed(1) || mockEvent.rating}</span>
-                      <span>({(event?.reviewCount || mockEvent.reviews).toLocaleString()} reviews)</span>
+                      <span className="font-semibold text-foreground">{event.averageRating?.toFixed(1) || '0.0'}</span>
+                      <span>({(event.reviewCount || 0).toLocaleString()} reviews)</span>
                     </div>
                     <div className="flex items-center space-x-1">
                       <Users className="h-5 w-5" />
-                      <span>{(event?.venueCapacity || mockEvent.venue.capacity).toLocaleString()} capacity</span>
+                      <span>{(event.venueCapacity || 0).toLocaleString()} capacity</span>
                     </div>
                   </div>
                 </CardContent>
@@ -226,7 +238,7 @@ export function EventDetails() {
                     </CardHeader>
                     <CardContent>
                       <p className="text-muted-foreground leading-relaxed">
-                        {event?.eventDescription || mockEvent.description}
+                        {event.eventDescription || 'No description available.'}
                       </p>
                     </CardContent>
                   </Card>
@@ -240,16 +252,16 @@ export function EventDetails() {
                     <CardContent className="space-y-4">
                       <div className="aspect-video rounded-lg overflow-hidden">
                         <img
-                          src={mockEvent.venue.image}
-                          alt={mockEvent.venue.name}
+                          src="/api/placeholder/400/300"
+                          alt={event.venueName || 'Venue'}
                           className="w-full h-full object-cover"
                         />
                       </div>
                       <div>
-                        <h3 className="font-semibold text-lg">{event?.venueName || mockEvent.venue.name}</h3>
-                        <p className="text-muted-foreground">{event?.venueAddress || mockEvent.venue.address}</p>
+                        <h3 className="font-semibold text-lg">{event.venueName}</h3>
+                        <p className="text-muted-foreground">{event.venueAddress || 'Address not available'}</p>
                         <p className="text-sm text-muted-foreground mt-2">
-                          Capacity: {(event?.venueCapacity || mockEvent.venue.capacity).toLocaleString()} people
+                          Capacity: {(event.venueCapacity || 0).toLocaleString()} people
                         </p>
                       </div>
                     </CardContent>
@@ -263,21 +275,8 @@ export function EventDetails() {
                     </CardHeader>
                     <CardContent className="space-y-6">
                       {/* Rating Breakdown */}
-                      <div className="space-y-3">
-                        {Object.entries(mockEvent.reviewBreakdown)
-                          .reverse()
-                          .map(([stars, percentage]) => (
-                          <div key={stars} className="flex items-center space-x-3">
-                            <div className="flex items-center space-x-1 w-12">
-                              <span className="text-sm">{stars}</span>
-                              <Star className="h-3 w-3 text-gold fill-gold" />
-                            </div>
-                            <Progress value={percentage} className="flex-1" />
-                            <span className="text-sm text-muted-foreground w-10">
-                              {percentage}%
-                            </span>
-                          </div>
-                        ))}
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>No reviews yet</p>
                       </div>
                     </CardContent>
                   </Card>
@@ -295,15 +294,15 @@ export function EventDetails() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {(event?.shows && event.shows.length > 0 ? event.shows : mockEvent.shows).map((show: any) => {
-                    const isRealShow = 'showId' in show
-                    const seatsLeft = isRealShow ? show.availableSeats : show.seatsLeft
-                    const availability = isRealShow ? (seatsLeft > 0 ? 'available' : 'sold-out') : show.availability
+                  {event.shows && event.shows.length > 0 ? (
+                    event.shows.map((show: any) => {
+                    const seatsLeft = show.availableSeats || 0
+                    const availability = seatsLeft > 0 ? 'available' : 'sold-out'
                     const config = getAvailabilityConfig(availability, seatsLeft)
                     
                     return (
                       <div
-                        key={isRealShow ? show.showId : show.id}
+                        key={show.showId}
                         className={cn(
                           "p-4 rounded-lg border transition-all duration-200",
                           availability !== 'sold-out' 
@@ -314,15 +313,15 @@ export function EventDetails() {
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <div className="font-semibold">
-                              {isRealShow ? new Date(show.showStartTime).toLocaleDateString('en-IN') : show.date}
+                              {new Date(show.showStartTime).toLocaleDateString('en-IN')}
                             </div>
                             <div className="text-sm text-muted-foreground">
-                              {isRealShow ? new Date(show.showStartTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : show.time}
+                              {new Date(show.showStartTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
                             </div>
                           </div>
                           <div className="text-right">
                             <div className="text-xs text-muted-foreground mb-1">Starts at</div>
-                            <div className="font-bold text-xl text-primary">₹{isRealShow ? show.showPriceMin : show.price}</div>
+                            <div className="font-bold text-xl text-primary">₹{show.showPriceMin || 0}</div>
                             <Badge variant={config.variant} className="text-xs mt-1">
                               {config.text}
                             </Badge>
@@ -341,14 +340,19 @@ export function EventDetails() {
                           {availability === 'sold-out' ? (
                             'Sold Out'
                           ) : (
-                            <Link to={`/shows/${isRealShow ? show.showId : show.id}`}>
+                            <Link to={`/seat-selection/${show.showId}`}>
                               Select Seats
                             </Link>
                           )}
                         </Button>
                       </div>
                     )
-                  })}
+                  })
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <p>No shows available</p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>

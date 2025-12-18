@@ -122,7 +122,8 @@ const EventShowsPage: React.FC = () => {
     }
   };
 
-  const getStatusText = (status: number) => {
+  const getStatusText = (status: number | undefined) => {
+    if (status === undefined) return 'Unknown';
     switch (status) {
       case 0: return 'Scheduled';
       case 1: return 'Live';
@@ -132,7 +133,8 @@ const EventShowsPage: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: number) => {
+  const getStatusColor = (status: number | undefined) => {
+    if (status === undefined) return 'bg-gray-100 text-gray-800';
     switch (status) {
       case 0: return 'bg-blue-100 text-blue-800';
       case 1: return 'bg-green-100 text-green-800';

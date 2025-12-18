@@ -5,10 +5,10 @@ import { RootState } from '../../store';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  role?: 'Customer' | 'Organizer' | 'Admin';
+  allowedRoles?: ('Customer' | 'Organizer' | 'Admin')[];
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, isInitialized } = useSelector((state: RootState) => state.auth);
 
   // Show loading while initializing auth state
@@ -20,11 +20,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (role && user?.role !== role) {
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles && user?.role && !allowedRoles.includes(user.role as any)) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;
 };
 
+export { ProtectedRoute };
 export default ProtectedRoute;

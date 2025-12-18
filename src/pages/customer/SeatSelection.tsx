@@ -57,15 +57,19 @@ export function SeatSelection() {
   const fetchShowData = async () => {
     try {
       setLoading(true)
-      const [showData, seatData] = await Promise.all([
-        customerAPI.getShowDetails(showId!),
-        customerAPI.getShowSeats(showId!)
-      ])
+      setError(null)
+      
+      // First get show details (cached)
+      const showData = await customerAPI.getShowDetails(showId!)
       setShowDetails(showData)
-      setSeats(seatData.seats)
+      setLoading(false)
+      
+      // Then get seat data (real-time)
+      const seatData = await customerAPI.getShowSeats(showId!, 1, 200)
+      setSeats(seatData?.seats || [])
     } catch (err) {
+      console.error('Failed to load show data:', err)
       setError('Failed to load show data')
-    } finally {
       setLoading(false)
     }
   }
@@ -76,17 +80,32 @@ export function SeatSelection() {
     const seat = seats.find(s => s.seatId === seatId)
     if (!seat || seat.status === 'Booked' || seat.status === 'Locked') return
 
+    // Optimistic update
+    const isSelecting = seat.status !== 'Selected'
+    if (isSelecting) {
+      setSelectedSeats(prev => [...prev, { ...seat, status: 'Selected' }])
+      setSeats(prev => prev.map(s => s.seatId === seatId ? { ...s, status: 'Selected' } : s))
+    } else {
+      setSelectedSeats(prev => prev.filter(s => s.seatId !== seatId))
+      setSeats(prev => prev.map(s => s.seatId === seatId ? { ...s, status: 'Available' } : s))
+    }
+
     try {
-      if (seat.status === 'Selected') {
-        await customerAPI.deselectSeat(seat.showSeatId!, user.userId)
-        setSelectedSeats(prev => prev.filter(s => s.seatId !== seatId))
-      } else {
+      if (isSelecting) {
         await customerAPI.selectSeat(seat.showSeatId!, user.userId)
-        setSelectedSeats(prev => [...prev, seat])
+      } else {
+        await customerAPI.deselectSeat(seat.showSeatId!, user.userId)
       }
-      await fetchShowData()
     } catch (err) {
       console.error('Failed to toggle seat:', err)
+      // Revert optimistic update on error
+      if (isSelecting) {
+        setSelectedSeats(prev => prev.filter(s => s.seatId !== seatId))
+        setSeats(prev => prev.map(s => s.seatId === seatId ? { ...s, status: 'Available' } : s))
+      } else {
+        setSelectedSeats(prev => [...prev, seat])
+        setSeats(prev => prev.map(s => s.seatId === seatId ? { ...s, status: 'Selected' } : s))
+      }
     }
   }
 
@@ -311,7 +330,7 @@ export function SeatSelection() {
                     <div className="space-y-1 mt-2 text-sm text-muted-foreground">
                       <div className="flex items-center space-x-2">
                         <Calendar className="h-4 w-4" />
-                        <span>{new Date(showDetails.showStartTime).toLocaleDateString()} • {new Date(showDetails.showStartTime).toLocaleTimeString()}</span>
+                        <span>{showDetails.showStartTime ? new Date(showDetails.showStartTime).toLocaleDateString() : 'TBD'} • {showDetails.showStartTime ? new Date(showDetails.showStartTime).toLocaleTimeString() : 'TBD'}</span>
                       </div>
                       <div className="flex items-center space-x-2">
                         <MapPin className="h-4 w-4" />

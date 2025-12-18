@@ -47,7 +47,8 @@ const ViewEventPage: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: string | number) => {
+  const getStatusColor = (status: string | number | undefined) => {
+    if (status === undefined) return 'bg-gray-100 text-gray-800';
     const statusStr = typeof status === 'number' ? getStatusText(status) : status;
     switch (statusStr.toLowerCase()) {
       case 'published': case 'live': return 'bg-green-100 text-green-800';
@@ -57,7 +58,8 @@ const ViewEventPage: React.FC = () => {
     }
   };
 
-  const getStatusText = (status: string | number) => {
+  const getStatusText = (status: string | number | undefined) => {
+    if (status === undefined) return 'Unknown';
     if (typeof status === 'string') return status;
     switch (status) {
       case 0: return 'Draft';
@@ -162,7 +164,7 @@ const ViewEventPage: React.FC = () => {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-gray-500 mb-2">Created</h3>
-                  <p className="text-gray-900">{new Date(event.createdAt).toLocaleDateString()}</p>
+                  <p className="text-gray-900">{event.createdAt ? new Date(event.createdAt).toLocaleDateString() : 'N/A'}</p>
                 </div>
               </div>
 

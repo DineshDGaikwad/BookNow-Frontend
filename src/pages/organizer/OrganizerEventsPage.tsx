@@ -60,7 +60,8 @@ const OrganizerEventsPage: React.FC = () => {
     }
   };
 
-  const getStatusText = (status: string | number) => {
+  const getStatusText = (status: string | number | undefined) => {
+    if (status === undefined) return 'Unknown';
     if (typeof status === 'string') return status;
     switch (status) {
       case 0: return 'Draft';
@@ -309,7 +310,7 @@ const OrganizerEventsPage: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-sm text-gray-400">
                       <span>{event.showCount || 0} shows</span>
-                      <span>{new Date(event.createdAt).toLocaleDateString()}</span>
+                      <span>{event.createdAt ? new Date(event.createdAt).toLocaleDateString() : 'N/A'}</span>
                     </div>
                     
                     <div className="flex items-center gap-2">

@@ -100,15 +100,19 @@ export function Events() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    fetchEvents()
+    const timeoutId = setTimeout(() => {
+      fetchEvents()
+    }, searchQuery ? 500 : 0) // Debounce search
+    
+    return () => clearTimeout(timeoutId)
   }, [searchQuery, selectedCategory, selectedCity])
 
   const fetchEvents = async () => {
     try {
       setLoading(true)
       setError(null)
-      const params: any = {}
-      if (searchQuery) params.search = searchQuery
+      const params: any = { limit: 20 }
+      if (searchQuery?.trim()) params.search = searchQuery.trim()
       if (selectedCategory !== 'All') params.category = selectedCategory
       if (selectedCity !== 'All Cities') params.city = selectedCity
       
@@ -116,7 +120,7 @@ export function Events() {
       setEvents(Array.isArray(data) ? data : [])
     } catch (err: any) {
       console.error('Failed to load events:', err)
-      setError(err?.response?.data?.message || 'Failed to load events. Please try again.')
+      setError('Failed to load events. Please try again.')
       setEvents([])
     } finally {
       setLoading(false)

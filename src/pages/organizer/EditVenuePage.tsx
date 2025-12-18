@@ -32,14 +32,16 @@ const EditVenuePage: React.FC = () => {
     try {
       if (!user?.userId || !venueId) return;
       const data = await venueAPI.getVenue(venueId, user.userId);
-      setFormData({
-        venueName: data.venueName,
-        venueAddress: data.venueAddress || '',
-        venueCity: data.venueCity || '',
-        venueState: data.venueState || '',
-        venueCapacity: data.venueCapacity,
-        venueType: data.venueType || ''
-      });
+      if (data) {
+        setFormData({
+          venueName: data.venueName || '',
+          venueAddress: data.venueAddress || '',
+          venueCity: data.venueCity || '',
+          venueState: data.venueState || '',
+          venueCapacity: data.venueCapacity || 0,
+          venueType: data.venueType || ''
+        });
+      }
     } catch (error) {
       console.error('Failed to load venue:', error);
       toast.error('Failed to load venue');

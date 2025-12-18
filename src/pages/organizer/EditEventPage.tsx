@@ -37,14 +37,16 @@ const EditEventPage: React.FC = () => {
         organizerAPI.getVenues(user.userId)
       ]);
       
-      setFormData({
-        eventTitle: eventData.eventTitle,
-        eventDescription: eventData.eventDescription || '',
-        eventCategory: eventData.eventCategory,
-        eventGenre: eventData.eventGenre || '',
-        venueId: '',
-        posterUrl: eventData.posterUrl || ''
-      });
+      if (eventData) {
+        setFormData({
+          eventTitle: eventData.eventTitle || '',
+          eventDescription: eventData.eventDescription || '',
+          eventCategory: eventData.eventCategory || '',
+          eventGenre: eventData.eventGenre || '',
+          venueId: '',
+          posterUrl: eventData.posterUrl || ''
+        });
+      }
       setVenues(venuesData);
     } catch (error) {
       console.error('Failed to load data:', error);
