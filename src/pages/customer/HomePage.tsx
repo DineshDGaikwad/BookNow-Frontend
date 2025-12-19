@@ -18,23 +18,30 @@ const HomePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    loadFeaturedEvents();
+    loadEvents();
   }, []);
 
-  const loadFeaturedEvents = async () => {
+  const loadEvents = async () => {
+    // Try cache first for instant loading
+    const cached = localStorage.getItem('featured-events-cache');
+    const cacheTime = localStorage.getItem('featured-events-cache-time');
+    
+    if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 300000) {
+      setFeaturedEvents(JSON.parse(cached));
+      return;
+    }
+
+    if (loading) return;
+    setLoading(true);
     try {
-      setLoading(true);
       const events = await customerAPI.getFeaturedEvents(6);
       setFeaturedEvents(events);
+      
+      // Cache for instant loading
+      localStorage.setItem('featured-events-cache', JSON.stringify(events));
+      localStorage.setItem('featured-events-cache-time', Date.now().toString());
     } catch (error) {
-      console.error('Failed to load events:', error);
-      // Fallback to regular events
-      try {
-        const fallbackEvents = await customerAPI.getEvents({ limit: 6 });
-        setFeaturedEvents(fallbackEvents);
-      } catch (fallbackError) {
-        console.error('Fallback also failed:', fallbackError);
-      }
+      setFeaturedEvents([]);
     } finally {
       setLoading(false);
     }
@@ -50,7 +57,7 @@ const HomePage: React.FC = () => {
   if (!user) {
     // Public Hero Section
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gray-900">
         <Header />
         
         <section className="relative min-h-[80vh] flex items-center justify-center overflow-hidden">
@@ -129,33 +136,36 @@ const HomePage: React.FC = () => {
 
         {/* Featured Events Section for Public Users */}
         {featuredEvents.length > 0 && (
-          <section className="py-20 bg-white">
+          <section className="py-20 bg-gray-800">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
               <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">Featured Events</h2>
-                <p className="text-gray-600 max-w-2xl mx-auto">
+                <h2 className="text-3xl font-bold text-white mb-4">Featured Events</h2>
+                <p className="text-gray-300 max-w-2xl mx-auto">
                   Discover amazing events happening near you. Join thousands of others for unforgettable experiences.
                 </p>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                {featuredEvents.slice(0, 6).map((event, index) => (
-                  <div key={event.eventId} className="animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                    <EventCard
-                      id={event.eventId}
-                      title={event.eventTitle}
-                      image={event.posterUrl}
-                      category={event.eventCategory}
-                      genre={event.eventGenre}
-                      venue={event.venueName || 'TBA'}
-                      city={event.venueCity}
-                      date={event.nextShowDate ? new Date(event.nextShowDate).toLocaleDateString() : 'TBA'}
-                      price={event.priceMin ? `₹${event.priceMin}` : 'TBA'}
-                      rating={event.averageRating}
-                      featured={index < 2}
-                    />
-                  </div>
-                ))}
+                {featuredEvents.map((event, index) => {
+                  const eventSlug = event.eventTitle.toLowerCase().replace(/\s+/g, '-');
+                  return (
+                    <div key={event.eventId} className="animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
+                      <EventCard
+                        id={eventSlug}
+                        title={event.eventTitle}
+                        image={event.posterUrl}
+                        category={event.eventCategory}
+                        genre={event.eventGenre}
+                        venue={event.venueName || 'TBA'}
+                        city={event.venueCity}
+                        date={event.nextShowDate ? new Date(event.nextShowDate).toLocaleDateString() : 'TBA'}
+                        price={event.priceMin ? `₹${event.priceMin}` : 'TBA'}
+                        rating={event.averageRating}
+                        featured={index < 2}
+                      />
+                    </div>
+                  );
+                })}
               </div>
               
               <div className="text-center mt-12">
@@ -234,23 +244,26 @@ const HomePage: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {featuredEvents.map((event, index) => (
-                <div key={event.eventId} className="animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
-                  <EventCard
-                    id={event.eventId}
-                    title={event.eventTitle}
-                    image={event.posterUrl}
-                    category={event.eventCategory}
-                    genre={event.eventGenre}
-                    venue={event.venueName || 'TBA'}
-                    city={event.venueCity}
-                    date={event.nextShowDate ? new Date(event.nextShowDate).toLocaleDateString() : 'TBA'}
-                    price={event.priceMin ? `₹${event.priceMin}` : 'TBA'}
-                    rating={event.averageRating}
-                    featured={index < 2}
-                  />
-                </div>
-              ))}
+              {featuredEvents.map((event, index) => {
+                const eventSlug = event.eventTitle.toLowerCase().replace(/\s+/g, '-');
+                return (
+                  <div key={event.eventId} className="animate-slide-up" style={{ animationDelay: `${index * 0.1}s` }}>
+                    <EventCard
+                      id={eventSlug}
+                      title={event.eventTitle}
+                      image={event.posterUrl}
+                      category={event.eventCategory}
+                      genre={event.eventGenre}
+                      venue={event.venueName || 'TBA'}
+                      city={event.venueCity}
+                      date={event.nextShowDate ? new Date(event.nextShowDate).toLocaleDateString() : 'TBA'}
+                      price={event.priceMin ? `₹${event.priceMin}` : 'TBA'}
+                      rating={event.averageRating}
+                      featured={index < 2}
+                    />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { User, LogOut, Settings } from 'lucide-react';
+import { User, LogOut, Settings, Ticket } from 'lucide-react';
 import { RootState } from '../../store';
 import { logout } from '../../store/authSlice';
 
@@ -43,7 +43,7 @@ const Header: React.FC = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-lg">B</span>
+              <Ticket className="h-5 w-5 text-white" />
             </div>
             <span className="text-xl font-bold text-gray-900">BookNow</span>
           </Link>

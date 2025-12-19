@@ -27,12 +27,16 @@ import OrganizerDashboard from './pages/organizer/OrganizerDashboard';
 import OrganizerEventsPage from './pages/organizer/OrganizerEventsPage';
 import CreateEventPage from './pages/organizer/CreateEventPage';
 import CreateVenuePage from './pages/organizer/CreateVenuePage';
+import CreateVenueWithSeatsPage from './pages/organizer/CreateVenueWithSeatsPage';
 import VenuesPage from './pages/organizer/VenuesPage';
+import ViewVenuePage from './pages/organizer/ViewVenuePage';
+import EditVenuePage from './pages/organizer/EditVenuePage';
+import VenueSeatManagement from './pages/organizer/VenueSeatManagement';
 import ViewEventPage from './pages/organizer/ViewEventPage';
 import EditEventPage from './pages/organizer/EditEventPage';
 
 // Admin pages
-import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminDashboard from './pages/admin/AdminDashboardNew';
 
 // Common pages
 import ProfilePage from './pages/ProfilePage';
@@ -57,8 +61,8 @@ export const AppRoutes: React.FC = () => {
 
         {/* Customer Routes */}
         <Route path="/events" element={<Events />} />
-        <Route path="/events/:id" element={<EventDetails />} />
-        <Route path="/seat-selection/:showId" element={
+        <Route path="/events/:slug" element={<EventDetails />} />
+        <Route path="/seat-selection/:showToken" element={
           <ProtectedRoute allowedRoles={['Customer']}>
             <SeatSelection />
           </ProtectedRoute>
@@ -115,12 +119,32 @@ export const AppRoutes: React.FC = () => {
             <CreateVenuePage />
           </ProtectedRoute>
         } />
-        <Route path="/organizer/events/:id" element={
+        <Route path="/organizer/create-venue-with-seats" element={
+          <ProtectedRoute allowedRoles={['Organizer']}>
+            <CreateVenueWithSeatsPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/organizer/venues/:venueSlug" element={
+          <ProtectedRoute allowedRoles={['Organizer']}>
+            <ViewVenuePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/organizer/venues/:venueSlug/edit" element={
+          <ProtectedRoute allowedRoles={['Organizer']}>
+            <EditVenuePage />
+          </ProtectedRoute>
+        } />
+        <Route path="/organizer/venues/:venueSlug/seats" element={
+          <ProtectedRoute allowedRoles={['Organizer']}>
+            <VenueSeatManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/organizer/events/:eventSlug" element={
           <ProtectedRoute allowedRoles={['Organizer']}>
             <ViewEventPage />
           </ProtectedRoute>
         } />
-        <Route path="/organizer/events/:id/edit" element={
+        <Route path="/organizer/events/:eventSlug/edit" element={
           <ProtectedRoute allowedRoles={['Organizer']}>
             <EditEventPage />
           </ProtectedRoute>
@@ -133,6 +157,26 @@ export const AppRoutes: React.FC = () => {
           </ProtectedRoute>
         } />
         <Route path="/admin/dashboard" element={
+          <ProtectedRoute allowedRoles={['Admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/users" element={
+          <ProtectedRoute allowedRoles={['Admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/events" element={
+          <ProtectedRoute allowedRoles={['Admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/venues" element={
+          <ProtectedRoute allowedRoles={['Admin']}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/approvals" element={
           <ProtectedRoute allowedRoles={['Admin']}>
             <AdminDashboard />
           </ProtectedRoute>

@@ -42,7 +42,7 @@ const EventShowsPage: React.FC = () => {
       
       setEvent(eventData);
       setShows(showsData);
-      setVenues(venuesData.filter(v => v.venueStatus === 1));
+      setVenues(venuesData.filter((v: any) => v.venueStatus === 1));
     } catch (error) {
       toast.error('Failed to load event data');
     } finally {

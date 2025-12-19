@@ -26,10 +26,15 @@ const OrganizerDashboardPage: React.FC = () => {
       const data = await organizerAPI.getDashboard(user.userId);
       setDashboard(data);
     } catch (error: any) {
-      console.error('Failed to load dashboard:', error);
-      if (error.response?.status === 401) {
-        window.location.href = '/login/organizer';
-      }
+      // Set fallback data on error
+      setDashboard({
+        totalEvents: 0,
+        totalShows: 0,
+        totalTicketsSold: 0,
+        totalRevenue: 0,
+        recentEvents: [],
+        upcomingShows: []
+      });
     } finally {
       setLoading(false);
     }
@@ -67,7 +72,7 @@ const OrganizerDashboardPage: React.FC = () => {
             <p className="text-gray-400 mt-2">Manage your events and track your success</p>
           </div>
           <Button asChild className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white">
-            <Link to="/organizer/events/create">
+            <Link to="/organizer/create-event">
               <Plus className="h-4 w-4" />
               Create Event
             </Link>
@@ -136,7 +141,7 @@ const OrganizerDashboardPage: React.FC = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <Card className="bg-gradient-to-br from-purple-600 to-blue-600 border-0 hover:shadow-xl hover:shadow-purple-500/20 transition-all cursor-pointer">
-            <Link to="/organizer/events/create">
+            <Link to="/organizer/create-event">
               <CardContent className="p-6">
                 <div className="flex items-center gap-4">
                   <div className="p-3 bg-white/20 rounded-lg">
@@ -219,7 +224,7 @@ const OrganizerDashboardPage: React.FC = () => {
                 <h3 className="text-lg font-medium text-white mb-2">No Events Yet</h3>
                 <p className="text-gray-400 mb-4">Create your first event to get started!</p>
                 <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white">
-                  <Link to="/organizer/events/create">
+                  <Link to="/organizer/create-event">
                     <Plus className="h-4 w-4 mr-2" />
                     Create Your First Event
                   </Link>

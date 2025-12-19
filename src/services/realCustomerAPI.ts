@@ -43,9 +43,18 @@ export interface CustomerEvent {
   venueCapacity?: number;
   nextShowDate?: string;
   priceMin?: number;
+  priceMax?: number;
   averageRating?: number;
   reviewCount?: number;
   shows?: any[];
+  seatTypes?: SeatTypeInfo[];
+}
+
+export interface SeatTypeInfo {
+  seatType: string;
+  basePrice: number;
+  maxPrice: number;
+  totalSeats: number;
 }
 
 export interface SeatInfo {
@@ -61,6 +70,8 @@ export interface SeatInfo {
   row?: string;
   seatRowNumber?: string;
   seatNumber?: string;
+  basePrice?: number;
+  maxPrice?: number;
 }
 
 export interface ShowDetails {
@@ -86,41 +97,53 @@ export interface SearchEventsParams {
   limit?: number;
 }
 
-export const customerAPI = {
-  // Get events with search and filters
-  getEvents: async (params: SearchEventsParams = {}): Promise<CustomerEvent[]> => {
-    try {
-      const searchParams = new URLSearchParams();
-      
-      if (params.search) searchParams.append('SearchTerm', params.search);
-      if (params.category && params.category !== 'All') searchParams.append('Category', params.category);
-      if (params.genre) searchParams.append('Genre', params.genre);
-      if (params.city && params.city !== 'All Cities') searchParams.append('City', params.city);
-      if (params.startDate) searchParams.append('StartDate', params.startDate);
-      if (params.endDate) searchParams.append('EndDate', params.endDate);
-      if (params.minPrice) searchParams.append('MinPrice', params.minPrice.toString());
-      if (params.maxPrice) searchParams.append('MaxPrice', params.maxPrice.toString());
-      
-      searchParams.append('Page', (params.page || 1).toString());
-      searchParams.append('PageSize', (params.pageSize || params.limit || 20).toString());
+// Global cache to prevent duplicate calls
+let eventsCache: { data: CustomerEvent[], timestamp: number } | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+let ongoingRequest: Promise<CustomerEvent[]> | null = null;
 
-      const response = await api.get(`/customer/events?${searchParams}`);
-      
-      // Handle different response structures
-      if (response.data.Events) {
-        return response.data.Events;
-      } else if (Array.isArray(response.data)) {
-        return response.data;
-      } else {
-        return response.data.events || [];
-      }
-    } catch (error: any) {
-      console.error('Failed to fetch events:', error);
-      if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-        throw new Error('Backend server is not running. Please start the backend server at http://localhost:5089');
-      }
-      throw error;
+export const customerAPI = {
+  // Get events using customer flow endpoint
+  getEvents: async (params: SearchEventsParams = {}): Promise<CustomerEvent[]> => {
+    // Return cached data if fresh and no search params
+    if (eventsCache && Date.now() - eventsCache.timestamp < CACHE_DURATION && !params.search) {
+      return eventsCache.data;
     }
+
+    // Return ongoing request if exists
+    if (ongoingRequest) {
+      return ongoingRequest;
+    }
+
+    ongoingRequest = (async () => {
+      try {
+        const response = await api.get('/customer/flow/events', {
+          params: {
+            search: params.search,
+            category: params.category !== 'All' ? params.category : undefined,
+            city: params.city !== 'All Cities' ? params.city : undefined,
+            page: params.page || 1,
+            pageSize: params.pageSize || params.limit || 50
+          }
+        });
+        
+        const events = response.data.Events || response.data.events || response.data || [];
+        
+        // Cache only if no search params
+        if (!params.search) {
+          eventsCache = { data: events, timestamp: Date.now() };
+        }
+        
+        return events;
+      } catch (error: any) {
+        console.error('Failed to fetch events:', error);
+        throw error;
+      } finally {
+        ongoingRequest = null;
+      }
+    })();
+
+    return ongoingRequest;
   },
 
   // Get all events
@@ -134,28 +157,27 @@ export const customerAPI = {
     }
   },
 
-  // Get featured events
+  // Get featured events from cache
   getFeaturedEvents: async (limit: number = 6): Promise<CustomerEvent[]> => {
-    try {
-      const response = await api.get(`/customer/events?PageSize=${limit}`);
-      const events = response.data.Events || response.data.events || response.data || [];
-      return events.slice(0, limit);
-    } catch (error: any) {
-      console.error('Failed to fetch featured events:', error);
-      if (error.code === 'ERR_NETWORK' || error.message.includes('Network Error')) {
-        throw new Error('Backend server is not running. Please start the backend server at http://localhost:5089');
-      }
-      throw error;
-    }
+    const events = await customerAPI.getEvents({});
+    return events.slice(0, limit);
   },
 
-  // Get event details by ID
-  getEventDetails: async (eventId: string, includeReviews: boolean = false): Promise<CustomerEvent> => {
+  // Get event by slug (no ID exposure)
+  getEventBySlug: async (slug: string): Promise<CustomerEvent> => {
+    // First check cache
+    if (eventsCache) {
+      const cached = eventsCache.data.find(e => 
+        e.eventTitle.toLowerCase().replace(/\s+/g, '-') === slug
+      );
+      if (cached) return cached;
+    }
+
     try {
-      const response = await api.get(`/customer/events/${eventId}?includeReviews=${includeReviews}`);
+      const response = await api.post('/events/by-slug', { slug });
       return response.data;
     } catch (error) {
-      console.error('Failed to fetch event details:', error);
+      console.error('Failed to fetch event:', error);
       throw error;
     }
   },
@@ -187,20 +209,10 @@ export const customerAPI = {
     }
   },
 
-  // Show-related endpoints
-  getShowDetails: async (showId: string): Promise<ShowDetails> => {
+  // Show operations with tokens (no ID exposure)
+  getShowSeatsByToken: async (showToken: string) => {
     try {
-      const response = await api.get(`/customer/shows/${showId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Failed to fetch show details:', error);
-      throw error;
-    }
-  },
-
-  getShowSeats: async (showId: string, page: number = 1, pageSize: number = 200) => {
-    try {
-      const response = await api.get(`/customer/seats/${showId}?page=${page}&pageSize=${pageSize}`);
+      const response = await api.post('/seats/for-show', { showToken });
       return response.data;
     } catch (error) {
       console.error('Failed to fetch show seats:', error);
@@ -208,10 +220,10 @@ export const customerAPI = {
     }
   },
 
-  // Seat selection endpoints
-  selectSeat: async (seatId: string, userId: string) => {
+  // Seat operations with tokens
+  selectSeatByToken: async (seatToken: string) => {
     try {
-      const response = await api.post(`/customer/seats/${seatId}/select`, { userId });
+      const response = await api.post('/seats/select', { seatToken });
       return response.data;
     } catch (error) {
       console.error('Failed to select seat:', error);
@@ -219,9 +231,9 @@ export const customerAPI = {
     }
   },
 
-  deselectSeat: async (seatId: string, userId: string) => {
+  deselectSeatByToken: async (seatToken: string) => {
     try {
-      const response = await api.post(`/customer/seats/${seatId}/deselect`, { userId });
+      const response = await api.post('/seats/deselect', { seatToken });
       return response.data;
     } catch (error) {
       console.error('Failed to deselect seat:', error);
@@ -251,15 +263,90 @@ export const customerAPI = {
     }
   },
 
-  // Validate seats before checkout
-  validateSeats: async (userId: string, seatIds: string[]) => {
+  // Validate seats with tokens
+  validateSeatsByTokens: async (seatTokens: string[]) => {
     try {
-      const response = await api.post('/customer/seats/validate', { userId, seatIds });
+      const response = await api.post('/seats/validate', { seatTokens });
       return response.data;
     } catch (error) {
       console.error('Failed to validate seats:', error);
       return { isValid: false, message: 'Failed to validate seats' };
     }
+  },
+
+  // Get event details using customer flow endpoint
+  getEventDetails: async (eventId: string, includeReviews: boolean = false): Promise<CustomerEvent> => {
+    if (eventsCache) {
+      const cached = eventsCache.data.find(e => e.eventId === eventId);
+      if (cached) return cached;
+    }
+    
+    try {
+      const response = await api.get(`/customer/flow/events/${eventId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch event details:', error);
+      throw error;
+    }
+  },
+
+  // Get show details
+  getShowDetails: async (showId: string): Promise<ShowDetails> => {
+    try {
+      const response = await api.get(`/customer/shows/${showId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch show details:', error);
+      throw error;
+    }
+  },
+
+  // Get show seats using customer flow endpoint
+  getShowSeats: async (showId: string, page: number = 1, pageSize: number = 200) => {
+    try {
+      const response = await api.get(`/customer/flow/shows/${showId}/seats`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch show seats:', error);
+      throw error;
+    }
+  },
+
+  // Seat operations using real-time endpoints
+  selectSeat: async (showSeatId: string, userId: string) => {
+    try {
+      const response = await api.post(`/customer/realtime-seats/${showSeatId}/select`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to select seat:', error);
+      throw error;
+    }
+  },
+
+  deselectSeat: async (showSeatId: string, userId: string) => {
+    try {
+      const response = await api.post(`/customer/realtime-seats/${showSeatId}/deselect`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to deselect seat:', error);
+      throw error;
+    }
+  },
+
+  // Validate seats using checkout endpoint
+  validateSeats: async (userId: string, seatIds: string[]) => {
+    try {
+      const response = await api.post('/customer/checkout/validate-seats', { userId, seatIds });
+      return response.data;
+    } catch (error) {
+      console.error('Failed to validate seats:', error);
+      return { isValid: false, message: 'Failed to validate seats' };
+    }
+  },
+
+  // Clear cache
+  clearCache: () => {
+    eventsCache = null;
   }
 };
 

@@ -144,7 +144,11 @@ export function SeatSelection() {
             showId,
             subtotal,
             fee,
-            total
+            total,
+            eventTitle: showDetails?.eventTitle,
+            showDate: showDetails?.showStartTime ? new Date(showDetails.showStartTime).toLocaleDateString() : 'TBD',
+            showTime: showDetails?.showStartTime ? new Date(showDetails.showStartTime).toLocaleTimeString() : 'TBD',
+            venueName: showDetails?.venueName
           }
         })
       } else {

@@ -107,6 +107,10 @@
   .seat-vip {
     @apply bg-secondary/20 border-secondary hover:bg-secondary/30 cursor-pointer transition-all duration-200;
   }
+
+  .seat-locked {
+    @apply bg-warning/20 border-warning cursor-not-allowed opacity-60;
+  }
 }
 
 @layer utilities {

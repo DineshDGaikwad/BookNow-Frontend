@@ -1,3 +1,3 @@
-export { bookingService } from './mockServices';
-export interface Booking { id: string; bookingId: string; eventTitle: string; showDate: string; showStartTime: string; venueName: string; seats: any[]; totalAmount: number; status: string; bookingStatus: string; }
+export { bookingService } from './realBookingService';
+export type { Booking } from './realBookingService';
 export interface BookingRequest { eventId: string; }

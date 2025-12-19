@@ -1,8 +1,8 @@
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_CONFIG, API_ENDPOINTS } from './apiConfig';
 
 class ApiService {
   private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-    const url = `${API_BASE_URL}${endpoint}`;
+    const url = `${API_CONFIG.BASE_URL}${endpoint}`;
     const token = localStorage.getItem('authToken');
     
     const config: RequestInit = {
@@ -53,21 +53,26 @@ class ApiService {
   }
 
   async getEvents(filters?: any) {
-    return this.request('/customer/events');
+    const queryParams = filters ? `?${new URLSearchParams(filters).toString()}` : '';
+    return this.request(`${API_ENDPOINTS.CUSTOMER.EVENTS}${queryParams}`);
   }
 
   async getEventById(id: string) {
-    return this.request(`/customer/events/${id}`);
+    return this.request(API_ENDPOINTS.CUSTOMER.EVENT_DETAILS(id));
   }
 
   async getShowSeats(showId: string) {
-    return this.request(`/customer/seats/${showId}`);
+    return this.request(API_ENDPOINTS.CUSTOMER.SHOW_SEATS(showId));
   }
 
   async lockSeats(showId: string, seatIds: string[]) {
-    return this.request('/customer/seats/lock', {
+    return this.request(API_ENDPOINTS.CUSTOMER.LOCK_SEATS, {
       method: 'POST',
-      body: JSON.stringify({ showId, seatIds }),
+      body: JSON.stringify({ 
+        showId, 
+        showSeatIds: seatIds, 
+        sessionId: Date.now().toString() 
+      }),
     });
   }
 
@@ -76,7 +81,7 @@ class ApiService {
   }
 
   async createBooking(bookingData: any) {
-    return this.request('/customer/bookings', {
+    return this.request(API_ENDPOINTS.CUSTOMER.CREATE_BOOKING, {
       method: 'POST',
       body: JSON.stringify(bookingData),
     });

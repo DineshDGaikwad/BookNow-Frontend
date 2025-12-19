@@ -1,4 +1,4 @@
-export { organizerAPI } from './mockServices';
+export { realOrganizerAPI as organizerAPI } from './realOrganizerAPI';
 export interface OrganizerDashboard { recentEvents?: any[]; upcomingShows?: any[]; totalEvents: number; totalShows: number; totalTicketsSold: number; totalRevenue: number; }
 export interface EventResponse { eventId: string; eventTitle: string; eventDescription?: string; eventCategory?: string; eventGenre?: string; posterUrl?: string; eventStatus: number; showCount?: number; organizerId?: string; organizerName?: string; createdAt: string; }
 export interface CreateEventRequest { eventTitle: string; eventDescription: string; eventCategory: string; eventGenre: string; posterUrl: string; }

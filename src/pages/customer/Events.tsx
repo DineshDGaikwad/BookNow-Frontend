@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Navbar } from '../../components/layout/Navbar'
 import { EventCard } from '../../components/customer/EventCard'
 import { Button } from '../../components/ui/button'
@@ -29,36 +29,66 @@ export function Events() {
   const [activeFilters, setActiveFilters] = useState<string[]>([])
   const [selectedDates, setSelectedDates] = useState<string[]>([])
   const [selectedGenres, setSelectedGenres] = useState<string[]>([])
-  const [events, setEvents] = useState<CustomerEvent[]>([])
-  const [loading, setLoading] = useState(true)
+  const [allEvents, setAllEvents] = useState<CustomerEvent[]>([])
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastFetch, setLastFetch] = useState(0)
+
+  // Filter events locally
+  const filteredEvents = useMemo(() => {
+    let filtered = allEvents
+
+    if (searchQuery?.trim()) {
+      const query = searchQuery.toLowerCase()
+      filtered = filtered.filter(event => 
+        event.eventTitle.toLowerCase().includes(query) ||
+        event.eventCategory.toLowerCase().includes(query) ||
+        event.venueName?.toLowerCase().includes(query)
+      )
+    }
+
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter(event => event.eventCategory === selectedCategory)
+    }
+
+    if (selectedCity !== 'All Cities') {
+      filtered = filtered.filter(event => event.venueCity === selectedCity)
+    }
+
+    return filtered
+  }, [allEvents, searchQuery, selectedCategory, selectedCity])
 
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      fetchEvents()
-    }, searchQuery ? 500 : 0) // Debounce search
+    // Load immediately from cache, then fetch if stale
+    const cached = localStorage.getItem('events-cache');
+    const cacheTime = localStorage.getItem('events-cache-time');
     
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery, selectedCategory, selectedCity])
+    if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 300000) {
+      setAllEvents(JSON.parse(cached));
+      setLastFetch(parseInt(cacheTime));
+    } else {
+      fetchEvents();
+    }
+  }, [])
 
   const fetchEvents = async () => {
+    if (loading) return
+    
+    setLoading(true)
+    setError(null)
+    
     try {
-      setLoading(true)
-      setError(null)
-      const params: any = { limit: 20 }
-      if (searchQuery?.trim()) params.search = searchQuery.trim()
-      if (selectedCategory !== 'All') params.category = selectedCategory
-      if (selectedCity !== 'All Cities') params.city = selectedCity
+      const events = await customerAPI.getEvents({})
+      setAllEvents(events)
+      const now = Date.now()
+      setLastFetch(now)
       
-      console.log('Fetching events with params:', params)
-      const data = await customerAPI.getEvents(params)
-      console.log('Received events data:', data)
-      setEvents(Array.isArray(data) ? data : [])
+      // Cache in localStorage for instant loading
+      localStorage.setItem('events-cache', JSON.stringify(events))
+      localStorage.setItem('events-cache-time', now.toString())
     } catch (err: any) {
-      console.error('Failed to load events:', err)
-      const errorMessage = err.message || err.response?.data?.message || 'Failed to load events. Please try again.'
-      setError(errorMessage)
-      setEvents([])
+      setError(err.message)
+      setAllEvents([])
     } finally {
       setLoading(false)
     }
@@ -252,7 +282,7 @@ export function Events() {
 
           {/* Results Count */}
           <div className="text-sm text-muted-foreground">
-            {loading ? 'Loading...' : `Showing ${events.length} events`}
+            {loading ? 'Loading...' : `Showing ${filteredEvents.length} events`}
           </div>
         </div>
 
@@ -279,7 +309,7 @@ export function Events() {
               )}
               <Button onClick={fetchEvents} className="mt-4">Try Again</Button>
             </div>
-          ) : !Array.isArray(events) || events.length === 0 ? (
+          ) : !Array.isArray(filteredEvents) || filteredEvents.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <p className="text-muted-foreground">No events found. Try adjusting your search criteria.</p>
               <Button onClick={() => {
@@ -292,27 +322,30 @@ export function Events() {
               </Button>
             </div>
           ) : (
-            events.map(event => (
-              <EventCard 
-                key={event.eventId} 
-                event={{
-                  id: event.eventId,
-                  title: event.eventTitle,
-                  category: event.eventCategory,
-                  image: event.posterUrl || '/api/placeholder/400/300',
-                  date: event.nextShowDate ? new Date(event.nextShowDate).toLocaleDateString('en-IN') : 'TBD',
-                  time: event.nextShowDate ? new Date(event.nextShowDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'TBD',
-                  venue: event.venueName || 'TBD',
-                  location: event.venueCity || 'TBD',
-                  price: event.priceMin || 0,
-                  rating: event.averageRating || 0,
-                  reviews: event.reviewCount || 0,
-                  duration: '2h',
-                  availability: 'available' as const
-                }}
-                className={view === 'list' ? 'flex-row' : ''}
-              />
-            ))
+            filteredEvents.map(event => {
+              const eventSlug = event.eventTitle.toLowerCase().replace(/\s+/g, '-')
+              return (
+                <EventCard 
+                  key={event.eventId} 
+                  event={{
+                    id: eventSlug,
+                    title: event.eventTitle,
+                    category: event.eventCategory,
+                    image: event.posterUrl || '/api/placeholder/400/300',
+                    date: event.nextShowDate ? new Date(event.nextShowDate).toLocaleDateString('en-IN') : 'TBD',
+                    time: event.nextShowDate ? new Date(event.nextShowDate).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : 'TBD',
+                    venue: event.venueName || 'TBD',
+                    location: event.venueCity || 'TBD',
+                    price: event.priceMin || 0,
+                    rating: event.averageRating || 0,
+                    reviews: event.reviewCount || 0,
+                    duration: '2h',
+                    availability: 'available' as const
+                  }}
+                  className={view === 'list' ? 'flex-row' : ''}
+                />
+              )
+            })
           )}
         </div>
 

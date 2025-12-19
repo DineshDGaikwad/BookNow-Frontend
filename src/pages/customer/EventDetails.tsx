@@ -11,7 +11,7 @@ import {
   ChevronLeft, Music, Ticket, Info, Building2, MessageSquare 
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
-import { customerAPI, CustomerEvent } from '../../services/customerAPI'
+import { customerAPI } from '../../services/customerAPI'
 
 const mockEvent = {
   id: '1',
@@ -66,21 +66,22 @@ const mockEvent = {
 }
 
 export function EventDetails() {
-  const { id } = useParams()
+  const { slug } = useParams()
   const [isLiked, setIsLiked] = useState(false)
-  const [event, setEvent] = useState<CustomerEvent | null>(null)
+  const [event, setEvent] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
+
   useEffect(() => {
-    if (id) {
+    if (slug) {
       fetchEventDetails()
     }
-  }, [id])
+  }, [slug])
 
   const fetchEventDetails = async () => {
     try {
       setLoading(true)
-      const data = await customerAPI.getEventDetails(id!, true)
+      const data = await customerAPI.getEventBySlug(slug!)
       setEvent(data)
     } catch (err) {
       console.error('Failed to load event:', err)
@@ -340,7 +341,7 @@ export function EventDetails() {
                           {availability === 'sold-out' ? (
                             'Sold Out'
                           ) : (
-                            <Link to={`/seat-selection/${show.showId}`}>
+                            <Link to={`/seat-selection/${btoa(JSON.stringify({showId: show.showId, eventSlug: slug}))}`}>
                               Select Seats
                             </Link>
                           )}

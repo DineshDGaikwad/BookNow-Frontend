@@ -80,13 +80,32 @@ const CreateAdvancedVenuePage: React.FC = () => {
 
     setLoading(true);
     try {
-      // TODO: Implement API call
       const payload = {
         ...venueData,
-        seatConfigurations
+        seatConfigurations: seatConfigurations.map(config => ({
+          seatType: config.seatType,
+          rowsCount: config.rowsCount,
+          seatsPerRow: config.seatsPerRow,
+          rowPrefix: config.rowPrefix,
+          basePrice: config.basePrice,
+          maxPrice: config.maxPrice
+        }))
       };
       
-      console.log('Creating venue with payload:', payload);
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const response = await fetch(`http://localhost:5089/api/organizer/venues/create-with-seats?organizerId=${user.userId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to create venue');
+      }
+      
       toast.success('Venue created successfully!');
       navigate('/organizer/venues');
     } catch (error) {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Ticket } from 'lucide-react';
 
 const LoginPage: React.FC = () => {
   return (
@@ -8,7 +9,7 @@ const LoginPage: React.FC = () => {
         <div className="glass-effect rounded-2xl p-8 shadow-xl">
           <div className="text-center">
             <div className="mx-auto h-16 w-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-6">
-              <span className="text-white font-bold text-2xl">B</span>
+              <Ticket className="h-8 w-8 text-white" />
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome to BookNow</h2>
             <p className="text-gray-600 mb-8">Choose your account type to continue</p>

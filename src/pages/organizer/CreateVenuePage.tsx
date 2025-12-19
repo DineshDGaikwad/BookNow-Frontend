@@ -45,16 +45,16 @@ const CreateVenuePage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-900">
       <Header />
       
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Add New Venue</h1>
-          <p className="text-gray-600">Create a new venue for hosting events</p>
+          <h1 className="text-3xl font-bold text-white mb-2">Add New Venue</h1>
+          <p className="text-gray-300">Create a new venue for hosting events</p>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-8">
+        <div className="bg-gray-800 rounded-xl shadow-lg p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Venue Name */}
             <div>

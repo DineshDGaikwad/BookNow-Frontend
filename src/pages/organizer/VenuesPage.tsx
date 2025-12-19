@@ -17,29 +17,61 @@ const VenuesPage: React.FC = () => {
   const [filter, setFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [deleting, setDeleting] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
+  const [loadingRef, setLoadingRef] = useState(false);
 
   useEffect(() => {
-    if (user?.userId) {
+    if (user?.userId && !loadingRef) {
       loadVenues();
     }
-  }, [user]);
+  }, [user?.userId]);
 
   const loadVenues = async () => {
+    if (loadingRef || !user?.userId) return;
+    
+    // Try cache first
+    const cacheKey = `venues-${user.userId}`;
+    const cached = localStorage.getItem(cacheKey);
+    const cacheTime = localStorage.getItem(`${cacheKey}-time`);
+    
+    if (cached && cacheTime && Date.now() - parseInt(cacheTime) < 120000) {
+      const cachedData = JSON.parse(cached);
+      setMyVenues(cachedData.myVenues);
+      setAllVenues(cachedData.allVenues);
+      setLoading(false);
+      return;
+    }
+    
+    setLoadingRef(true);
+    setLoading(true);
+    
     try {
-      if (!user?.userId) return;
-      const [myVenuesData, allVenuesData] = await Promise.all([
-        venueAPI.getVenues(user.userId),
-        venueAPI.getApprovedVenues()
-      ]);
-      setMyVenues(myVenuesData.filter(v => v.organizerId === user.userId));
-      setAllVenues(allVenuesData.filter(v => v.organizerId !== user.userId));
+      const myVenuesData = await venueAPI.getVenues(user.userId).catch(() => []);
+      const allVenuesData = await venueAPI.getApprovedVenues().catch(() => []);
+      
+      const myVenues = Array.isArray(myVenuesData) ? myVenuesData : [];
+      const allVenues = Array.isArray(allVenuesData) ? allVenuesData : [];
+      
+      const filteredMyVenues = myVenues.filter((v: any) => v.organizerId === user.userId);
+      const filteredAllVenues = allVenues.filter((v: any) => v.organizerId !== user.userId).map((v: any) => ({
+        ...v,
+        organizerId: 'HIDDEN'
+      }));
+      
+      setMyVenues(filteredMyVenues);
+      setAllVenues(filteredAllVenues);
+      
+      // Cache for instant loading
+      localStorage.setItem(cacheKey, JSON.stringify({
+        myVenues: filteredMyVenues,
+        allVenues: filteredAllVenues
+      }));
+      localStorage.setItem(`${cacheKey}-time`, Date.now().toString());
     } catch (error: any) {
-      console.error('Failed to load venues:', error);
-      if (error.response?.status === 401) {
-        window.location.href = '/login/organizer';
-      }
+      setMyVenues([]);
+      setAllVenues([]);
     } finally {
       setLoading(false);
+      setLoadingRef(false);
     }
   };
 
@@ -62,7 +94,8 @@ const VenuesPage: React.FC = () => {
     setDeleting(venueId);
     try {
       await venueAPI.deleteVenue(venueId, user.userId);
-      await loadVenues();
+      // Update local state instead of reloading all venues
+      setMyVenues(prev => prev.filter(v => v.venueId !== venueId));
     } catch (error: any) {
       console.error('Failed to delete venue:', error);
       alert('Failed to delete venue. Please try again.');
@@ -77,7 +110,10 @@ const VenuesPage: React.FC = () => {
     setToggling(venueId);
     try {
       await venueAPI.toggleVenueStatus(venueId, user.userId);
-      await loadVenues();
+      // Update local state instead of reloading all venues
+      setMyVenues(prev => prev.map(v => 
+        v.venueId === venueId ? { ...v, isActive: !v.isActive } : v
+      ));
     } catch (error: any) {
       console.error('Failed to toggle venue status:', error);
       alert('Failed to update venue status. Please try again.');
@@ -121,12 +157,20 @@ const VenuesPage: React.FC = () => {
             <h1 className="text-3xl font-bold text-white">Venue Management</h1>
             <p className="text-gray-400 mt-2">Manage your venue listings and configurations</p>
           </div>
-          <Button asChild className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white">
-            <Link to="/organizer/venues/create">
-              <Plus className="h-4 w-4" />
-              Add New Venue
-            </Link>
-          </Button>
+          <div className="flex gap-2">
+            <Button asChild className="flex items-center gap-2 bg-purple-600 hover:bg-purple-700 text-white">
+              <Link to="/organizer/create-venue">
+                <Plus className="h-4 w-4" />
+                Simple Venue
+              </Link>
+            </Button>
+            <Button asChild className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white">
+              <Link to="/organizer/create-venue-with-seats">
+                <Plus className="h-4 w-4" />
+                Venue with Seats
+              </Link>
+            </Button>
+          </div>
         </div>
 
         {/* Stats */}
@@ -236,7 +280,7 @@ const VenuesPage: React.FC = () => {
             </p>
             {filter === 'all' && (
               <Button asChild className="bg-purple-600 hover:bg-purple-700 text-white">
-                <Link to="/organizer/venues/create">
+                <Link to="/organizer/create-venue">
                   <Plus className="h-4 w-4 mr-2" />
                   Add Your First Venue
                 </Link>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate, Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import { Navbar } from '../../components/layout/Navbar'
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
 import { Button } from '../../components/ui/button'
@@ -13,6 +14,8 @@ import {
   Calendar, MapPin, AlertTriangle, Lock
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { RootState } from '../../store'
+import { bookingService } from '../../services/bookingService'
 
 const paymentMethods = [
   { 
@@ -44,13 +47,14 @@ const paymentMethods = [
 export function Checkout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useSelector((state: RootState) => state.auth)
   const [timeLeft, setTimeLeft] = useState(600) // 10 minutes in seconds
   const [paymentMethod, setPaymentMethod] = useState('card')
   const [isProcessing, setIsProcessing] = useState(false)
   const [formData, setFormData] = useState({
-    fullName: '',
-    email: '',
-    phone: '',
+    fullName: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
     cardNumber: '',
     expiryDate: '',
     cvv: '',
@@ -62,7 +66,12 @@ export function Checkout() {
     selectedSeats: [],
     subtotal: 0,
     fee: 0,
-    total: 0
+    total: 0,
+    showId: null,
+    eventTitle: '',
+    showDate: '',
+    showTime: '',
+    venueName: ''
   }
 
   // Timer countdown
@@ -90,13 +99,49 @@ export function Checkout() {
     setFormData(prev => ({ ...prev, [field]: value }))
   }
 
-  const handlePayment = () => {
+  const handlePayment = async () => {
+    if (!bookingData.selectedSeats?.length || !bookingData.showId) {
+      alert('Invalid booking data')
+      return
+    }
+
     setIsProcessing(true)
     
-    // Simulate payment processing
-    setTimeout(() => {
-      navigate('/booking/BK123456')
-    }, 2000)
+    try {
+      // Step 1: Initialize booking flow
+      const seatIds = bookingData.selectedSeats.map((seat: any) => seat.showSeatId || seat.seatId)
+      await bookingService.initializeBookingFlow(bookingData.showId, seatIds)
+      
+      // Step 2: Lock seats
+      await bookingService.lockSeats(bookingData.showId, seatIds)
+      
+      // Step 3: Process payment
+      const paymentResult = await bookingService.processPayment({
+        showId: bookingData.showId,
+        seatIds,
+        totalAmount: bookingData.total,
+        paymentMethod,
+        customerDetails: {
+          fullName: formData.fullName,
+          email: formData.email,
+          phone: formData.phone
+        }
+      })
+      
+      // Step 4: Complete booking
+      const result = await bookingService.completeBooking(paymentResult.bookingId)
+      
+      if (result.success) {
+        navigate(`/booking/${paymentResult.bookingId}`)
+      } else {
+        throw new Error('Booking completion failed')
+      }
+    } catch (error: any) {
+      console.error('Payment failed:', error)
+      alert(error.message || 'Payment failed. Please try again.')
+    } finally {
+      setIsProcessing(false)
+    }
   }
 
   if (bookingData.selectedSeats.length === 0) {
@@ -273,15 +318,15 @@ export function Checkout() {
               <CardContent className="space-y-4">
                 {/* Event Info */}
                 <div>
-                  <h3 className="font-semibold">Taylor Swift | The Eras Tour</h3>
+                  <h3 className="font-semibold">{bookingData.eventTitle || 'Event'}</h3>
                   <div className="space-y-1 mt-2 text-sm text-muted-foreground">
                     <div className="flex items-center space-x-2">
                       <Calendar className="h-4 w-4" />
-                      <span>December 15, 2024 • 7:00 PM</span>
+                      <span>{bookingData.showDate || 'TBD'} • {bookingData.showTime || 'TBD'}</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <MapPin className="h-4 w-4" />
-                      <span>Madison Square Garden</span>
+                      <span>{bookingData.venueName || 'TBD'}</span>
                     </div>
                   </div>
                 </div>
@@ -294,17 +339,17 @@ export function Checkout() {
                     Seats ({bookingData.selectedSeats.length})
                   </h4>
                   <div className="space-y-2">
-                    {bookingData.selectedSeats.map((seat: any) => (
-                      <div key={seat.id} className="flex items-center justify-between text-sm">
+                    {bookingData.selectedSeats.map((seat: any, idx: number) => (
+                      <div key={seat.seatId || idx} className="flex items-center justify-between text-sm">
                         <div className="flex items-center space-x-2">
                           <Badge variant="outline" className="text-xs">
-                            {seat.id}
+                            {seat.seatNumber || seat.id}
                           </Badge>
                           <Badge variant="gold" className="text-xs">
-                            {seat.section}
+                            {seat.seatType || seat.section || 'Standard'}
                           </Badge>
                         </div>
-                        <span className="font-medium">₹{seat.price}</span>
+                        <span className="font-medium">₹{seat.seatPrice || seat.price || 0}</span>
                       </div>
                     ))}
                   </div>

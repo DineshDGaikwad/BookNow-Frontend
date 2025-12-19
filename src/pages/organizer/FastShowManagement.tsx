@@ -48,7 +48,7 @@ const FastShowManagement: React.FC = () => {
       
       setEvent(eventData);
       setShows(showsData || []);
-      setVenues((venuesData || []).filter(v => v.venueStatus === 1));
+      setVenues((venuesData || []).filter((v: any) => v.venueStatus === 1));
     } catch (error) {
       toast.error('Failed to load data');
       setShows([]);
@@ -77,7 +77,7 @@ const FastShowManagement: React.FC = () => {
       setSeatConfigurations(configurations);
       
       // Initialize seat pricing with base prices
-      const initialPricing = configurations.map((config) => ({
+      const initialPricing = configurations.map((config: any) => ({
         seatType: config.seatType,
         price: config.minPrice
       }));

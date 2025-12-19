@@ -67,7 +67,7 @@ const ShowManagementPage: React.FC = () => {
       
       setEvent(eventData);
       setShows(showsData || []);
-      setVenues((venuesData || []).filter(v => v.venueStatus === 1));
+      setVenues((venuesData || []).filter((v: any) => v.venueStatus === 1));
       
     } catch (error) {
       console.error('Failed to load data:', error);
@@ -95,7 +95,7 @@ const ShowManagementPage: React.FC = () => {
       setSeatConfigurations(configurations);
       
       // Initialize seat pricing with base prices
-      const initialPricing = configurations.map((config) => ({
+      const initialPricing = configurations.map((config: any) => ({
         seatType: config.seatType,
         price: config.minPrice
       }));

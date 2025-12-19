@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
+import { Ticket } from 'lucide-react';
 import { customerLogin, organizerLogin, adminLogin } from '../../store/authSlice';
 import { RootState, AppDispatch } from '../../store';
 import GoogleSignInButton from './GoogleSignInButton';
@@ -82,7 +83,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ userType }) => {
         <div className="glass-effect rounded-2xl p-8 shadow-xl">
           <div className="text-center">
             <div className="mx-auto h-12 w-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center mb-4">
-              <span className="text-white font-bold text-xl">B</span>
+              <Ticket className="h-6 w-6 text-white" />
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">{getTitle()}</h2>
             <p className="text-gray-600">Welcome back to BookNow</p>
@@ -140,6 +141,31 @@ const LoginForm: React.FC<LoginFormProps> = ({ userType }) => {
             {userType === 'customer' && <GoogleSignInButton />}
 
             {getRegisterLink()}
+
+            {/* Test Credentials */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm">
+              <p className="font-medium text-blue-800 mb-2">Test Credentials:</p>
+              <div className="text-blue-700">
+                {userType === 'customer' && (
+                  <>
+                    <p>Email: test@customer.com</p>
+                    <p>Password: Test123!</p>
+                  </>
+                )}
+                {userType === 'organizer' && (
+                  <>
+                    <p>Email: test@organizer.com</p>
+                    <p>Password: Test123!</p>
+                  </>
+                )}
+                {userType === 'admin' && (
+                  <>
+                    <p>Email: admin@booknow.com</p>
+                    <p>Password: Admin123!</p>
+                  </>
+                )}
+              </div>
+            </div>
 
             <div className="text-center">
               <Link to="/login" className="text-sm text-gray-500 hover:text-gray-700">

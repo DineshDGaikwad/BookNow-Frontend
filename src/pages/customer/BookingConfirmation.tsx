@@ -44,6 +44,20 @@ export function BookingConfirmation() {
     )
   }
 
+  if (!booking) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Booking not found</p>
+          <Button asChild className="mt-4">
+            <Link to="/events">Back to Events</Link>
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
   const mockBooking = {
     id: bookingId || 'BK123456',
     event: {
@@ -106,7 +120,7 @@ export function BookingConfirmation() {
                 {mockBooking.event.category}
               </Badge>
               <h2 className="text-2xl font-bold text-white">
-                {mockBooking.event.title}
+                {booking?.eventTitle || mockBooking.event.title}
               </h2>
             </div>
           </div>
@@ -116,7 +130,7 @@ export function BookingConfirmation() {
             <div className="flex items-center justify-between mb-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
               <div>
                 <p className="text-sm text-muted-foreground">Booking Reference</p>
-                <p className="font-mono font-semibold text-lg">{mockBooking.id}</p>
+                <p className="font-mono font-semibold text-lg">{booking?.bookingId || mockBooking.id}</p>
               </div>
               <Button variant="outline" size="sm">
                 <Share2 className="h-4 w-4 mr-2" />
@@ -146,19 +160,16 @@ export function BookingConfirmation() {
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
                       <Calendar className="h-5 w-5 text-primary" />
-                      <span>{mockBooking.event.date}</span>
+                      <span>{booking?.showStartTime ? new Date(booking.showStartTime).toLocaleDateString() : mockBooking.event.date}</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Clock className="h-5 w-5 text-primary" />
-                      <span>{mockBooking.event.time}</span>
+                      <span>{booking?.showStartTime ? new Date(booking.showStartTime).toLocaleTimeString() : mockBooking.event.time}</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <MapPin className="h-5 w-5 text-primary" />
                       <div>
-                        <div>{mockBooking.event.venue.name}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {mockBooking.event.venue.address}
-                        </div>
+                        <div>{booking?.venueName || mockBooking.event.venue.name}</div>
                       </div>
                     </div>
                   </div>
@@ -170,9 +181,9 @@ export function BookingConfirmation() {
                 <div>
                   <h3 className="font-semibold mb-3">Your Seats</h3>
                   <div className="flex flex-wrap gap-2">
-                    {mockBooking.seats.map((seat) => (
-                      <Badge key={seat.id} variant="gold" className="text-sm">
-                        {seat.id} • {seat.section}
+                    {(booking?.seats || mockBooking.seats).map((seat: any, idx: number) => (
+                      <Badge key={seat.seatNumber || seat.id || idx} variant="gold" className="text-sm">
+                        {seat.seatNumber || seat.id} • {seat.seatType || seat.section}
                       </Badge>
                     ))}
                   </div>
@@ -184,9 +195,9 @@ export function BookingConfirmation() {
                 <div>
                   <h3 className="font-semibold mb-3">Payment Summary</h3>
                   <div className="space-y-2">
-                    {mockBooking.seats.map((seat) => (
-                      <div key={seat.id} className="flex justify-between text-sm">
-                        <span>Seat {seat.id} ({seat.section})</span>
+                    {(booking?.seats || mockBooking.seats).map((seat: any, idx: number) => (
+                      <div key={seat.seatNumber || seat.id || idx} className="flex justify-between text-sm">
+                        <span>Seat {seat.seatNumber || seat.id} ({seat.seatType || seat.section})</span>
                         <span>₹{seat.price}</span>
                       </div>
                     ))}
@@ -202,7 +213,7 @@ export function BookingConfirmation() {
                     <div className="flex items-center space-x-2 text-sm text-muted-foreground mt-2">
                       <CreditCard className="h-4 w-4" />
                       <span>
-                        Paid via {mockBooking.payment.method} ****{mockBooking.payment.last4} on {mockBooking.payment.date}
+                        Paid on {booking?.createdAt ? new Date(booking.createdAt).toLocaleDateString() : mockBooking.payment.date}
                       </span>
                     </div>
                   </div>

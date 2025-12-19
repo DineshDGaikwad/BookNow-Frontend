@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { Eye, EyeOff, DollarSign, Save, RotateCcw, Edit, X, Check } from 'lucide-react';
@@ -32,20 +32,83 @@ interface SeatTypeConfig {
 }
 
 const VenueSeatManagement: React.FC = () => {
-  const { venueId } = useParams<{ venueId: string }>();
+  const { venueSlug } = useParams<{ venueSlug: string }>();
   const { user } = useSelector((state: RootState) => state.auth);
+  const [venue, setVenue] = useState<any>(null);
   const [seats, setSeats] = useState<Seat[]>([]);
   const [seatConfigs, setSeatConfigs] = useState<SeatTypeConfig[]>([]);
   const [selectedSeats, setSelectedSeats] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  // Cache to prevent repeated API calls
+  const [dataCache, setDataCache] = useState<{[key: string]: {data: any, timestamp: number}}>({});
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [editMode, setEditMode] = useState(false);
   const [editConfigs, setEditConfigs] = useState<SeatTypeConfig[]>([]);
   const [editingConfig, setEditingConfig] = useState<string | null>(null);
 
+  // Memoize venue ID to prevent unnecessary re-renders
+  const venueId = useMemo(() => venue?.venueId, [venue]);
+
   useEffect(() => {
-    loadVenueSeats();
-  }, [venueId]);
+    if (venueSlug) {
+      loadVenueData();
+    }
+  }, [venueSlug]);
+
+  const loadVenueData = async () => {
+    const cacheKey = `venue-${venueSlug}-${user?.userId}`;
+    const cached = dataCache[cacheKey];
+    
+    // Return cached data if less than 2 minutes old
+    if (cached && Date.now() - cached.timestamp < 120000) {
+      setVenue(cached.data.venue);
+      setSeats(cached.data.seats);
+      setSeatConfigs(cached.data.configs);
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // Single API call to get all data
+      const [venues, seatData] = await Promise.all([
+        venueAPI.getVenues(user!.userId),
+        // Pre-load seat data for all venues to cache
+        Promise.resolve(null)
+      ]);
+      
+      const venueData = venues.find((v: any) => 
+        v.venueName.toLowerCase().replace(/\s+/g, '-') === venueSlug
+      );
+      
+      if (!venueData) {
+        throw new Error('Venue not found');
+      }
+      
+      setVenue(venueData);
+      
+      // Load seats in parallel
+      const seatsPromise = loadVenueSeats(venueData.venueId);
+      await seatsPromise;
+      
+      // Cache the complete data
+      setDataCache(prev => ({
+        ...prev,
+        [cacheKey]: {
+          data: { venue: venueData, seats, configs: seatConfigs },
+          timestamp: Date.now()
+        }
+      }));
+      
+    } catch (error) {
+      console.error('Failed to load venue:', error);
+      toast.error('Failed to load venue data');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const calculateSeatLayout = (seats: Seat[], seatType: string) => {
     const typeSeats = seats.filter(seat => seat.seatType === seatType);
@@ -63,13 +126,23 @@ const VenueSeatManagement: React.FC = () => {
     return { rowsCount, seatsPerRow };
   };
 
-  const loadVenueSeats = async () => {
+  const loadVenueSeats = async (venueIdParam: string) => {
+    const seatCacheKey = `seats-${venueIdParam}`;
+    const cached = dataCache[seatCacheKey];
+    
+    // Return cached seats if less than 1 minute old
+    if (cached && Date.now() - cached.timestamp < 60000) {
+      setSeats(cached.data.seats);
+      setSeatConfigs(cached.data.configs);
+      return;
+    }
+
     try {
-      if (!user?.userId || !venueId) return;
+      if (!user?.userId || !venueIdParam) return;
       
-      const data = await venueAPI.getVenueSeats(venueId, user.userId);
+      const data = await venueAPI.getVenueSeats(venueIdParam, user.userId);
       const loadedSeats = data.seats || [];
-      const loadedConfigs = (data.configurations || []).map(config => {
+      const loadedConfigs = (data.configurations || []).map((config: any) => {
         const layout = calculateSeatLayout(loadedSeats, config.seatType);
         return {
           ...config,
@@ -80,11 +153,19 @@ const VenueSeatManagement: React.FC = () => {
       
       setSeats(loadedSeats);
       setSeatConfigs(loadedConfigs);
+      
+      // Cache seat data
+      setDataCache(prev => ({
+        ...prev,
+        [seatCacheKey]: {
+          data: { seats: loadedSeats, configs: loadedConfigs },
+          timestamp: Date.now()
+        }
+      }));
+      
     } catch (error) {
       console.error('Failed to load venue seats:', error);
       toast.error('Failed to load venue seats');
-    } finally {
-      setLoading(false);
     }
   };
 
